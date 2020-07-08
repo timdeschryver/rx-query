@@ -1,6 +1,6 @@
 import { createQuery, DEFAULT_QUERY_CONFIG } from './create-query';
 import { interval, of, throwError } from 'rxjs';
-import { take, takeWhile, map, tap } from 'rxjs/operators';
+import { take, takeWhile, map } from 'rxjs/operators';
 import { eachValueFrom } from 'rxjs-for-await';
 import { fireEvent } from '@testing-library/dom';
 
@@ -279,129 +279,38 @@ it('invokes query on focus', async () => {
   ]);
 });
 
-// const createTestScheduler = () =>
-//   new TestScheduler((actual, expected) => {
-//     expect(actual).toEqual(expected);
-//   });
+it('can disable refresh on cached data', async () => {
+  let values = [];
+  let success = 0;
 
-// it('succeeds', () => {
-//   const testScheduler = createTestScheduler();
+  for await (const value of eachValueFrom(
+    createQuery(
+      interval(5).pipe(
+        take(3),
+        map((x) => x % 2 === 0)
+      ),
+      (bool) => of(bool),
+      {
+        disableRefresh: true,
+      }
+    ).pipe(
+      takeWhile((x) => {
+        success += x.status === 'success' ? 1 : 0;
+        return success !== 3;
+      }, true)
+    )
+  )) {
+    values.push(value);
+  }
 
-//   testScheduler.run((helpers) => {
-//     const { cold, expectObservable } = helpers;
+  expect(values).toEqual([
+    { status: 'loading', retries: 0 },
+    { status: 'success', data: true, retries: 0 },
+    { status: 'loading', retries: 0 },
+    { status: 'success', data: false, retries: 0 },
 
-//     const input = cold('--a|');
-
-//     const values = {
-//       l: {
-//         data: undefined,
-//         retries: 0,
-//         status: 'loading',
-//       },
-//       s: {
-//         data: 'a',
-//         retries: 0,
-//         status: 'success',
-//         error: undefined,
-//       },
-//     };
-//     const expected = 'l-s--';
-
-//     expectObservable(createQuery('foo', () => input)).toBe(expected, values);
-//   });
-// });
-
-// it('retries', () => {
-//   const testScheduler = createTestScheduler();
-
-//   testScheduler.run((helpers) => {
-//     const { cold, expectObservable } = helpers;
-
-//     const input = cold('--#');
-
-//     const values = {
-//       l: {
-//         data: undefined,
-//         retries: 0,
-//         status: 'loading',
-//       },
-
-//       a: {
-//         retries: 0,
-//         status: 'error',
-//         error: 'Error'
-//       },
-//       b: {
-//         retries: 0,
-//         status: 'loading',
-//         error: 'Error'
-//       },
-
-//       c: {
-//         retries: 1,
-//         status: 'error',
-//         error: 'Error'
-//       },
-//       d: {
-//         retries: 1,
-//         status: 'loading',
-//         error: 'Error'
-//       },
-
-//       e: {
-//         retries: 2,
-//         status: 'error',
-//         error: 'Error'
-//       },
-//       f: {
-//         retries: 2,
-//         status: 'loading',
-//         error: 'Error'
-//       },
-
-//       z: {
-//         retries: 3,
-//         status: 'error',
-//         error: 'Error'
-//       },
-//     };
-//     const expected = 'l 1ms (ab) 98ms (cd) 198ms (ef) 298ms z--';
-
-//     expectObservable(createQuery('foo', () => input)).toBe(expected, values);
-//   });
-// });
-
-// it('caches', () => {
-//   const testScheduler = createTestScheduler();
-
-//   testScheduler.run((helpers) => {
-//     const { cold, expectObservable } = helpers;
-
-//     const input = cold('20ms a|');
-
-//     const values = {
-//       l: {
-//         data: undefined,
-//         retries: 0,
-//         status: 'loading',
-//       },
-//       c: {
-//         data: 'a',
-//         retries: 0,
-//         status: 'loading',
-//         error: undefined,
-//       },
-//       s: {
-//         data: 'a',
-//         retries: 0,
-//         status: 'success',
-//         error: undefined,
-//       },
-//     };
-//     const expected = '100ms l 19ms s 300ms c 19ms s';
-
-//     expectObservable(
-//       createQuery(interval(100).pipe(take(2), mapTo('a')), () => input)
-//     ).toBe(expected, values);
-//   });
-// });
+    // doesn't fire a load
+    // { status: 'loading', retries: 0, data: true },
+    { status: 'success', data: true, retries: 0 },
+  ]);
+});
