@@ -11,19 +11,17 @@ import { RickAndMortyService } from './rickandmorty.service';
   template: `
     <a routerLink="/">Home</a>
     <ng-container *ngIf="character$ | async as character">
-      <div *ngIf="character.status === 'loading'">
-        Loading ... ({{ character.retries }})
-      </div>
-
-      <div *ngIf="character.status === 'error'">
-        Something went wrong ...({{ character.retries }})
-      </div>
-
-      <div
-        *ngIf="character.status === 'loading' || character.status === 'success'"
-      >
-        <pre>{{ character.data | json }}</pre>
-      </div>
+      <ng-container [ngSwitch]="character.state">
+        <div *ngSwitchCase="'loading'">
+          Loading ... ({{ character.retries }})
+        </div>
+        <div *ngSwitchCase="'error'">
+          Something went wrong ... ({{ character.retries }})
+        </div>
+        <div *ngSwitchDefault>
+          <pre>{{ character.data | json }}</pre>
+        </div>
+      </ng-container>
     </ng-container>
   `,
 })

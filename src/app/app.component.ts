@@ -9,28 +9,24 @@ import { RickAndMortyService } from './rickandmorty.service';
   selector: 'app-root',
   template: `
     <ng-container *ngIf="characters$ | async as characters">
-      <div *ngIf="characters.status === 'loading'">
-        Loading ... ({{ characters.retries }})
-      </div>
-
-      <div *ngIf="characters.status === 'error'">
-        Something went wrong ... ({{ characters.retries }})
-      </div>
-
-      <div
-        *ngIf="
-          characters.status === 'loading' || characters.status === 'success'
-        "
-      >
-        <ul>
-          <li *ngFor="let character of characters.data">
-            <a [routerLink]="character.id"> {{ character.name }}</a>
-          </li>
-          <li>
-            <a routerLink="9999">Throw an error</a>
-          </li>
-        </ul>
-      </div>
+      <ng-container [ngSwitch]="characters.state">
+        <div *ngSwitchCase="'loading'">
+          Loading ... ({{ characters.retries }})
+        </div>
+        <div *ngSwitchCase="'error'">
+          Something went wrong ... ({{ characters.retries }})
+        </div>
+        <div *ngSwitchDefault>
+          <ul>
+            <li *ngFor="let character of characters.data">
+              <a [routerLink]="character.id"> {{ character.name }}</a>
+            </li>
+            <li>
+              <a routerLink="9999">Throw an error</a>
+            </li>
+          </ul>
+        </div>
+      </ng-container>
     </ng-container>
     <router-outlet></router-outlet>
   `,

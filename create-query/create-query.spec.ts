@@ -8,18 +8,18 @@ it('first loads then succeeds', async () => {
   let values = [];
   for await (const value of eachValueFrom(
     createQuery(() => of({ id: '3' })).pipe(
-      takeWhile((x) => x.status !== 'success', true)
+      takeWhile((x) => x.state !== 'success', true)
     )
   )) {
     values.push(value);
   }
   expect(values).toEqual([
     {
-      status: 'loading',
+      state: 'loading',
       retries: 0,
     },
     {
-      status: 'success',
+      state: 'success',
       data: { id: '3' },
       retries: 0,
     },
@@ -30,7 +30,7 @@ it('retries then errors', async () => {
   let values = [];
   for await (const value of eachValueFrom(
     createQuery(() => throwError('Error')).pipe(
-      takeWhile((x) => x.status !== 'error', true)
+      takeWhile((x) => x.state !== 'error', true)
     )
   )) {
     values.push(value);
@@ -38,18 +38,18 @@ it('retries then errors', async () => {
 
   expect(values).toEqual([
     {
-      status: 'loading',
+      state: 'loading',
       retries: 0,
     },
     ...Array.from({ length: DEFAULT_QUERY_CONFIG.retries as number }).map(
       (_, i) => ({
-        status: 'loading',
+        state: 'loading',
         retries: i,
         error: 'Error',
       })
     ),
     {
-      status: 'error',
+      state: 'error',
       retries: 3,
       error: 'Error',
     },
@@ -62,23 +62,23 @@ it('can override default error config with retries', async () => {
     createQuery(() => throwError('Error'), {
       retries: 1,
       retryDelay: 1,
-    }).pipe(takeWhile((x) => x.status !== 'error', true))
+    }).pipe(takeWhile((x) => x.state !== 'error', true))
   )) {
     values.push(value);
   }
 
   expect(values).toEqual([
     {
-      status: 'loading',
+      state: 'loading',
       retries: 0,
     },
     {
-      status: 'loading',
+      state: 'loading',
       retries: 0,
       error: 'Error',
     },
     {
-      status: 'error',
+      state: 'error',
       retries: 1,
       error: 'Error',
     },
@@ -94,23 +94,23 @@ it('can override default error config with custom retry', async () => {
         return n < 5;
       },
       retryDelay: 1,
-    }).pipe(takeWhile((x) => x.status !== 'error', true))
+    }).pipe(takeWhile((x) => x.state !== 'error', true))
   )) {
     values.push(value);
   }
 
   expect(values).toEqual([
     {
-      status: 'loading',
+      state: 'loading',
       retries: 0,
     },
     ...Array.from({ length: 5 }).map((_, i) => ({
-      status: 'loading',
+      state: 'loading',
       retries: i,
       error: 'Error',
     })),
     {
-      status: 'error',
+      state: 'error',
       retries: 5,
       error: 'Error',
     },
@@ -129,7 +129,7 @@ it('caches previous results', async () => {
       (bool) => of(bool)
     ).pipe(
       takeWhile((x) => {
-        success += x.status === 'success' ? 1 : 0;
+        success += x.state === 'success' ? 1 : 0;
         return success !== 3;
       }, true)
     )
@@ -138,14 +138,14 @@ it('caches previous results', async () => {
   }
 
   expect(values).toEqual([
-    { status: 'loading', retries: 0 },
-    { status: 'success', data: true, retries: 0 },
-    { status: 'loading', retries: 0 },
-    { status: 'success', data: false, retries: 0 },
+    { state: 'loading', retries: 0 },
+    { state: 'success', data: true, retries: 0 },
+    { state: 'loading', retries: 0 },
+    { state: 'success', data: false, retries: 0 },
 
-    // true again, so loading gets the cached data
-    { status: 'loading', retries: 0, data: true },
-    { status: 'success', data: true, retries: 0 },
+    // true again -> refresh the cache
+    { state: 'refreshing', retries: 0, data: true },
+    { state: 'success', data: true, retries: 0 },
   ]);
 });
 
@@ -164,7 +164,7 @@ it('can disable cache', async () => {
       }
     ).pipe(
       takeWhile((x) => {
-        success += x.status === 'success' ? 1 : 0;
+        success += x.state === 'success' ? 1 : 0;
         return success !== 3;
       }, true)
     )
@@ -173,14 +173,14 @@ it('can disable cache', async () => {
   }
 
   expect(values).toEqual([
-    { status: 'loading', retries: 0 },
-    { status: 'success', data: true, retries: 0 },
-    { status: 'loading', retries: 0 },
-    { status: 'success', data: false, retries: 0 },
+    { state: 'loading', retries: 0 },
+    { state: 'success', data: true, retries: 0 },
+    { state: 'loading', retries: 0 },
+    { state: 'success', data: false, retries: 0 },
 
-    // no cache, so data is undefined
-    { status: 'loading', retries: 0 },
-    { status: 'success', data: true, retries: 0 },
+    // no cache -> data is undefined
+    { state: 'loading', retries: 0 },
+    { state: 'success', data: true, retries: 0 },
   ]);
 });
 
@@ -191,6 +191,8 @@ it('invokes query on refresh', async () => {
   for await (const value of eachValueFrom(
     createQuery(() => of(i++), {
       refetchInterval: 5,
+      // can still refresh with an interval when refresh is disabled
+      disableRefresh: true,
     }).pipe(takeWhile((x) => i <= 24))
   )) {
     values.push(value);
@@ -198,41 +200,41 @@ it('invokes query on refresh', async () => {
 
   expect(values).toEqual([
     {
-      status: 'loading',
+      state: 'loading',
       retries: 0,
     },
     {
-      status: 'success',
+      state: 'success',
       data: 20,
       retries: 0,
     },
     {
-      status: 'loading',
+      state: 'refreshing',
       data: 20,
       retries: 0,
     },
     {
-      status: 'success',
+      state: 'success',
       data: 21,
       retries: 0,
     },
     {
-      status: 'loading',
+      state: 'refreshing',
       data: 21,
       retries: 0,
     },
     {
-      status: 'success',
+      state: 'success',
       data: 22,
       retries: 0,
     },
     {
-      status: 'loading',
+      state: 'refreshing',
       data: 22,
       retries: 0,
     },
     {
-      status: 'success',
+      state: 'success',
       data: 23,
       retries: 0,
     },
@@ -250,6 +252,8 @@ it('invokes query on focus', async () => {
   for await (const value of eachValueFrom(
     createQuery(() => of(i++), {
       refetchOnWindowFocus: true,
+      // can still refresh with an interval when refresh is disabled
+      disableRefresh: true,
     }).pipe(take(4))
   )) {
     values.push(value);
@@ -257,22 +261,22 @@ it('invokes query on focus', async () => {
 
   expect(values).toEqual([
     {
-      status: 'loading',
+      state: 'loading',
       retries: 0,
     },
     {
-      status: 'success',
+      state: 'success',
       data: 20,
       retries: 0,
     },
-    // refetch because window gets focused
+    // refetch because window is focused
     {
-      status: 'loading',
+      state: 'refreshing',
       data: 20,
       retries: 0,
     },
     {
-      status: 'success',
+      state: 'success',
       data: 21,
       retries: 0,
     },
@@ -295,7 +299,7 @@ it('can disable refresh on cached data', async () => {
       }
     ).pipe(
       takeWhile((x) => {
-        success += x.status === 'success' ? 1 : 0;
+        success += x.state === 'success' ? 1 : 0;
         return success !== 3;
       }, true)
     )
@@ -304,13 +308,13 @@ it('can disable refresh on cached data', async () => {
   }
 
   expect(values).toEqual([
-    { status: 'loading', retries: 0 },
-    { status: 'success', data: true, retries: 0 },
-    { status: 'loading', retries: 0 },
-    { status: 'success', data: false, retries: 0 },
+    { state: 'loading', retries: 0 },
+    { state: 'success', data: true, retries: 0 },
+    { state: 'loading', retries: 0 },
+    { state: 'success', data: false, retries: 0 },
 
     // doesn't fire a load
-    // { status: 'loading', retries: 0, data: true },
-    { status: 'success', data: true, retries: 0 },
+    // { state: 'refreshing', retries: 0, data: true },
+    { state: 'success', data: true, retries: 0 },
   ]);
 });

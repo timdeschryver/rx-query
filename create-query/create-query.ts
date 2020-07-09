@@ -24,13 +24,11 @@ import {
   withLatestFrom,
   takeUntil,
   repeat,
-  distinct,
 } from 'rxjs/operators';
 
-export type QueryStatus = 'loading' | 'success' | 'error';
-
+export type QueryStatus = 'loading' | 'refreshing' | 'success' | 'error';
 export type QueryOutput<R> = {
-  status: QueryStatus;
+  state: QueryStatus;
   data?: R;
   error?: any;
   retries: number;
@@ -155,56 +153,54 @@ export function createQuery<
   const trigger$ = merge(...triggers);
 
   return trigger$.pipe(
-    switchMap((trigger) => {
+    switchMap(({ trigger, key, params }) => {
       const call = (retries: number): Observable<QueryOutput<QueryResult>> => {
-        return query(trigger.params).pipe(
-          map((data) => {
-            const status: QueryStatus = 'success';
-            return {
-              status,
-              data,
-              retries,
-            };
-          }),
-          catchError((error) => {
-            const status: QueryStatus = 'error';
-            return of({
-              status,
-              error,
-              retries,
-            });
-          }),
+        return query(params).pipe(
+          map(
+            (data): QueryOutput<QueryResult> => {
+              return {
+                state: 'success',
+                data,
+                retries,
+              };
+            }
+          ),
+          catchError(
+            (error): Observable<QueryOutput<QueryResult>> => {
+              return of({
+                state: 'error',
+                error,
+                retries,
+              });
+            }
+          ),
           tap((result) => {
             if (
               queryConfig.disableCache !== true &&
-              result.status === 'success' &&
+              result.state === 'success' &&
               result.data
             ) {
-              queryCache[trigger.key] = result.data;
+              queryCache[key] = result.data;
             }
           })
         );
       };
 
       const cachedDataEntry =
-        queryConfig.disableCache !== true && queryCache[trigger.key]
-          ? { data: queryCache[trigger.key] }
+        queryConfig.disableCache !== true && queryCache[key]
+          ? { data: queryCache[key] }
           : undefined;
 
-      if (queryConfig.disableRefresh && cachedDataEntry) {
-        const output: QueryOutput<QueryResult> = {
-          retries: 0,
-          status: 'success',
-          data: cachedDataEntry.data,
-        };
-        return of(output);
-      }
+      // distinguish a load and a cache refresh
+      const loadingState: QueryStatus = cachedDataEntry
+        ? 'refreshing'
+        : 'loading';
 
       const callResult$: Observable<QueryOutput<QueryResult>> = defer(() =>
         call(0).pipe(
           expand((result) => {
             if (
-              result.status === 'error' &&
+              result.state === 'error' &&
               retryCondition(result.retries, result.error)
             ) {
               return timer(retryDelay(result.retries)).pipe(
@@ -213,7 +209,7 @@ export function createQuery<
                 // for consumers we're still loading
                 startWith({
                   ...result,
-                  status: 'loading' as QueryStatus,
+                  state: loadingState,
                 })
               );
             }
@@ -222,27 +218,29 @@ export function createQuery<
           }),
           // prevents that there's multiple emits in the same tick
           // for when the status is swapped from error to loading (to retry)
-          debounce((result) => (result.status === 'error' ? timer(0) : EMPTY)),
+          debounce((result) => (result.state === 'error' ? timer(0) : EMPTY)),
           startWith({
-            status: 'loading' as QueryStatus,
+            state: loadingState,
             retries: 0,
             ...cachedDataEntry,
-          })
+          } as QueryOutput<QueryResult>)
         )
       );
 
-      const cachedResult$: Observable<QueryOutput<QueryResult>> = defer(() =>
-        of({
-          retries: 0,
-          status: 'success' as QueryStatus,
-          data: cachedDataEntry!.data,
-        })
+      const cachedResult$: Observable<QueryOutput<QueryResult>> = defer(
+        (): Observable<QueryOutput<QueryResult>> => {
+          return of({
+            retries: 0,
+            state: 'success',
+            data: cachedDataEntry!.data,
+          });
+        }
       );
 
       return iif(
         () =>
           Boolean(
-            trigger.key === 'params' &&
+            trigger === 'params' &&
               queryConfig.disableRefresh &&
               cachedDataEntry
           ),
