@@ -1,10 +1,10 @@
-# createQuery
+# rx-query
 
-Check out the example on [StackBlitz](https://stackblitz.com/github/timdeschryver/create-query).
+Check out the example on [StackBlitz](https://stackblitz.com/github/timdeschryver/rx-query).
 
 ## Features
 
-👉 result with status indicator  
+👉 result with state indicator  
 👉 automatic fetch on change  
 👉 retries on errors  
 👉 cached results  

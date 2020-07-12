@@ -1,0 +1,9 @@
+{
+	"compilerOptions": {
+		"declaration": true,
+		"sourceMap": true
+	},
+	"include": ["rx-query/**/*.ts"],
+	"exclude": ["rx-query/**/*.spec.ts"],
+	"extends": "./tsconfig.base.json"
+}
