@@ -10,6 +10,9 @@ import {
 	interval,
 	NEVER,
 	iif,
+	ObservableInput,
+	OperatorFunction,
+	ObservedValueOf,
 } from 'rxjs';
 import {
 	map,
@@ -41,15 +44,19 @@ export type QueryConfig = {
 	refetchOnWindowFocus?: boolean;
 	disableCache?: boolean;
 	disableRefresh?: boolean;
+	mapOperator?: <T, O extends ObservableInput<any>>(
+		project: (value: T, index: number) => O,
+	) => OperatorFunction<T, ObservedValueOf<O>>;
 };
 
-export const DEFAULT_QUERY_CONFIG: QueryConfig = {
+export const DEFAULT_QUERY_CONFIG: Required<QueryConfig> = {
 	retries: 3,
 	retryDelay: (n) => (n + 1) * 1000,
 	refetchOnWindowFocus: false,
-	refetchInterval: undefined,
+	refetchInterval: undefined as any,
 	disableCache: false,
 	disableRefresh: false,
+	mapOperator: switchMap,
 };
 
 export function query<
@@ -71,26 +78,9 @@ export function query<
 	QueryResult,
 	Query extends (params: QueryParam) => Observable<QueryResult>
 >(...inputs: any[]): Observable<QueryOutput<QueryResult>> {
-	const [firstInput, secondInput, thirdInput] = inputs;
-
-	const hasParamInput = typeof firstInput !== 'function';
-
-	const inputQueryParam = (hasParamInput ? firstInput : of(undefined)) as
-		| QueryParam
-		| Observable<QueryParam>;
-
-	const query = (typeof firstInput === 'function'
-		? firstInput
-		: secondInput) as Query;
-
-	const inputConfig = (hasParamInput ? thirdInput : secondInput) as
-		| QueryConfig
-		| undefined;
-
-	const queryConfig = {
-		...DEFAULT_QUERY_CONFIG,
-		...inputConfig,
-	};
+	const { query, inputQueryParam, queryConfig } = parseInput<QueryParam, Query>(
+		inputs,
+	);
 
 	const queryCache: {
 		[cacheKey: string]: QueryResult;
@@ -153,7 +143,7 @@ export function query<
 	const trigger$ = merge(...triggers);
 
 	return trigger$.pipe(
-		switchMap(({ trigger, key, params }) => {
+		queryConfig.mapOperator(({ trigger, key, params }) => {
 			const call = (retries: number): Observable<QueryOutput<QueryResult>> => {
 				return query(params).pipe(
 					map(
@@ -249,6 +239,35 @@ export function query<
 			).pipe(share());
 		}),
 	);
+}
+
+function parseInput<QueryParam, Query>(inputs: any[]) {
+	const [firstInput, secondInput, thirdInput] = inputs;
+
+	const hasParamInput = typeof firstInput !== 'function';
+
+	const inputQueryParam = (hasParamInput ? firstInput : of(undefined)) as
+		| QueryParam
+		| Observable<QueryParam>;
+
+	const query = (typeof firstInput === 'function'
+		? firstInput
+		: secondInput) as Query;
+
+	const inputConfig = (hasParamInput ? thirdInput : secondInput) as
+		| QueryConfig
+		| undefined;
+
+	const queryConfig = {
+		...DEFAULT_QUERY_CONFIG,
+		...inputConfig,
+	};
+
+	return {
+		query,
+		inputQueryParam,
+		queryConfig,
+	};
 }
 
 interface Trigger<T> {

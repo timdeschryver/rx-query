@@ -1,6 +1,6 @@
 {
 	"name": "rx-query",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "rx-query",
 	"author": "Tim Deschryver",
 	"repository": {
@@ -38,7 +38,11 @@
 		"dist:clean": "rimraf dist"
 	},
 	"private": false,
-	"dependencies": {
+	"peerDependencies": {
+		"rxjs": "^6.0.0"
+	},
+	"dependencies": {},
+	"devDependencies": {
 		"@angular/animations": "~10.0.0",
 		"@angular/common": "~10.0.0",
 		"@angular/compiler": "~10.0.0",
@@ -50,9 +54,7 @@
 		"@testing-library/angular": "^10.0.0",
 		"rxjs": "~6.5.5",
 		"tslib": "^2.0.0",
-		"zone.js": "~0.10.3"
-	},
-	"devDependencies": {
+		"zone.js": "~0.10.3",
 		"@angular-devkit/build-angular": "~0.1000.0",
 		"@angular/cli": "~10.0.0",
 		"@angular/compiler-cli": "~10.0.0",

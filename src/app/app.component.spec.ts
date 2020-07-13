@@ -62,10 +62,10 @@ test('Integration', async () => {
 
 	// Retries to fetch
 	await screen.findByText(/Loading ... \(0\)/i);
-	await screen.findByText(/Loading ... \(1\)/i, undefined, { timeout: 4100 });
-	await screen.findByText(/Loading ... \(2\)/i, undefined, { timeout: 5100 });
+	await screen.findByText(/Loading ... \(1\)/i, undefined, { timeout: 6000 });
+	await screen.findByText(/Loading ... \(2\)/i, undefined, { timeout: 6000 });
 	await screen.findByText(/Something went wrong ... \(3\)/i, undefined, {
-		timeout: 6100,
+		timeout: 6000,
 	});
 
 	// Refocus re-fetches data
