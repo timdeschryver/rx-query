@@ -27,6 +27,7 @@ import {
 	withLatestFrom,
 	takeUntil,
 	repeat,
+	distinctUntilChanged,
 } from 'rxjs/operators';
 
 export type QueryStatus = 'loading' | 'refreshing' | 'success' | 'error';
@@ -117,6 +118,7 @@ export function query<
 			trigger: 'params',
 			key: JSON.stringify(params),
 		})),
+		distinctUntilChanged((a, b) => a.key === b.key),
 	);
 
 	const repeatOnFocus$: Observable<Trigger<

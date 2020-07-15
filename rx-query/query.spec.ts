@@ -117,7 +117,7 @@ it('can override default error config with custom retry', async () => {
 	]);
 });
 
-it('caches previous results', async () => {
+it('retrieves data when params change and caches previous results', async () => {
 	const values = [];
 	let success = 0;
 	for await (const value of eachValueFrom(
@@ -146,6 +146,29 @@ it('caches previous results', async () => {
 		// true again -> refresh the cache
 		{ state: 'refreshing', retries: 0, data: true },
 		{ state: 'success', data: true, retries: 0 },
+	]);
+});
+
+it('ignores following params with same key', async () => {
+	const values = [];
+
+	for await (const value of eachValueFrom(
+		query(
+			interval(5).pipe(
+				take(5),
+				map((_, i) => (i < 4 ? 'same' : 'other')),
+			),
+			(result) => of(result),
+		).pipe(takeWhile((x) => x.data !== 'other', true)),
+	)) {
+		values.push(value);
+	}
+
+	expect(values).toEqual([
+		{ state: 'loading', retries: 0 },
+		{ state: 'success', data: 'same', retries: 0 },
+		{ state: 'loading', retries: 0 },
+		{ state: 'success', data: 'other', retries: 0 },
 	]);
 });
 
