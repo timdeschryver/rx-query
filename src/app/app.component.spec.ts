@@ -18,7 +18,9 @@ beforeEach(() => {
 	});
 });
 
-test('Integration', async () => {
+// TODO: Wait for msw 0.20
+
+test.skip('Integration', async () => {
 	const { navigate } = await render(AppComponent, {
 		declarations: [CharacterComponent],
 	});

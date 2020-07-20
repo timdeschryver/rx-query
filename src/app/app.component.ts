@@ -33,10 +33,13 @@ import { RickAndMortyService } from './rickandmorty.service';
 })
 export class AppComponent {
 	characters$ = query(
+		'characters',
 		() => this.rickAndMortyService.getCharacters().pipe(pluck('results')),
 		{
 			refetchOnWindowFocus: true,
+			staleTime: 10000,
 		},
 	);
+
 	constructor(private rickAndMortyService: RickAndMortyService) {}
 }

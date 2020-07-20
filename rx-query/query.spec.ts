@@ -7,7 +7,7 @@ import { query, DEFAULT_QUERY_CONFIG } from '.';
 it('first loads then succeeds', async () => {
 	const values = [];
 	for await (const value of eachValueFrom(
-		query(() => of({ id: '3' })).pipe(
+		query('test', () => of({ id: '3' })).pipe(
 			takeWhile((x) => x.state !== 'success', true),
 		),
 	)) {
@@ -16,12 +16,10 @@ it('first loads then succeeds', async () => {
 	expect(values).toEqual([
 		{
 			state: 'loading',
-			retries: 0,
 		},
 		{
 			state: 'success',
 			data: { id: '3' },
-			retries: 0,
 		},
 	]);
 });
@@ -29,7 +27,7 @@ it('first loads then succeeds', async () => {
 it('retries then errors', async () => {
 	const values = [];
 	for await (const value of eachValueFrom(
-		query(() => throwError('Error')).pipe(
+		query('test', () => throwError('Error')).pipe(
 			takeWhile((x) => x.state !== 'error', true),
 		),
 	)) {
@@ -39,7 +37,6 @@ it('retries then errors', async () => {
 	expect(values).toEqual([
 		{
 			state: 'loading',
-			retries: 0,
 		},
 		...Array.from({ length: DEFAULT_QUERY_CONFIG.retries as number }).map(
 			(_, i) => ({
@@ -59,7 +56,7 @@ it('retries then errors', async () => {
 it('can override default error config with retries', async () => {
 	const values = [];
 	for await (const value of eachValueFrom(
-		query(() => throwError('Error'), {
+		query('test', () => throwError('Error'), {
 			retries: 1,
 			retryDelay: 1,
 		}).pipe(takeWhile((x) => x.state !== 'error', true)),
@@ -70,7 +67,6 @@ it('can override default error config with retries', async () => {
 	expect(values).toEqual([
 		{
 			state: 'loading',
-			retries: 0,
 		},
 		{
 			state: 'loading',
@@ -88,7 +84,7 @@ it('can override default error config with retries', async () => {
 it('can override default error config with custom retry', async () => {
 	const values = [];
 	for await (const value of eachValueFrom(
-		query(() => throwError('Error'), {
+		query('test', () => throwError('Error'), {
 			retries: (n, error) => {
 				expect(error).toBe('Error');
 				return n < 5;
@@ -102,7 +98,6 @@ it('can override default error config with custom retry', async () => {
 	expect(values).toEqual([
 		{
 			state: 'loading',
-			retries: 0,
 		},
 		...Array.from({ length: 5 }).map((_, i) => ({
 			state: 'loading',
@@ -120,8 +115,13 @@ it('can override default error config with custom retry', async () => {
 it('retrieves data when params change and caches previous results', async () => {
 	const values = [];
 	let success = 0;
+
+	// keep true alive, to keep the true group alive
+	const sub = query('test', true, () => of(true)).subscribe();
+
 	for await (const value of eachValueFrom(
 		query(
+			'test',
 			interval(5).pipe(
 				take(3),
 				map((x) => x % 2 === 0),
@@ -138,52 +138,34 @@ it('retrieves data when params change and caches previous results', async () => 
 	}
 
 	expect(values).toEqual([
-		{ state: 'loading', retries: 0 },
-		{ state: 'success', data: true, retries: 0 },
-		{ state: 'loading', retries: 0 },
-		{ state: 'success', data: false, retries: 0 },
+		// true is already in cache, so it refreshes
+		{ state: 'refreshing', data: true },
+		{ state: 'success', data: true },
+		{ state: 'loading' },
+		{ state: 'success', data: false },
 
 		// true again -> refresh the cache
-		{ state: 'refreshing', retries: 0, data: true },
-		{ state: 'success', data: true, retries: 0 },
+		{ state: 'refreshing', data: true },
+		{ state: 'success', data: true },
 	]);
+
+	sub.unsubscribe();
 });
 
-it('ignores following params with same key', async () => {
-	const values = [];
-
-	for await (const value of eachValueFrom(
-		query(
-			interval(5).pipe(
-				take(5),
-				map((_, i) => (i < 4 ? 'same' : 'other')),
-			),
-			(result) => of(result),
-		).pipe(takeWhile((x) => x.data !== 'other', true)),
-	)) {
-		values.push(value);
-	}
-
-	expect(values).toEqual([
-		{ state: 'loading', retries: 0 },
-		{ state: 'success', data: 'same', retries: 0 },
-		{ state: 'loading', retries: 0 },
-		{ state: 'success', data: 'other', retries: 0 },
-	]);
-});
-
-it('can disable cache', async () => {
+it('groups cache continues to live until cacheTime resolves', async () => {
 	const values = [];
 	let success = 0;
+
 	for await (const value of eachValueFrom(
 		query(
+			'test',
 			interval(5).pipe(
 				take(3),
 				map((x) => x % 2 === 0),
 			),
 			(bool) => of(bool),
 			{
-				disableCache: true,
+				cacheTime: 1000,
 			},
 		).pipe(
 			takeWhile((x) => {
@@ -196,14 +178,111 @@ it('can disable cache', async () => {
 	}
 
 	expect(values).toEqual([
-		{ state: 'loading', retries: 0 },
-		{ state: 'success', data: true, retries: 0 },
-		{ state: 'loading', retries: 0 },
-		{ state: 'success', data: false, retries: 0 },
+		{ state: 'loading' },
+		{ state: 'success', data: true },
+		{ state: 'loading' },
+		{ state: 'success', data: false },
+
+		// true was already cached and while being unsubscribed to, the cache remains
+		{ state: 'refreshing', data: true },
+		{ state: 'success', data: true },
+	]);
+});
+
+it('groups clean up after last unsubscribe', async () => {
+	const values = [];
+	let success = 0;
+
+	for await (const value of eachValueFrom(
+		query(
+			'test',
+			interval(5).pipe(
+				take(3),
+				map((x) => x % 2 === 0),
+			),
+			(bool) => of(bool),
+			{
+				cacheTime: 0,
+			},
+		).pipe(
+			takeWhile((x) => {
+				success += x.state === 'success' ? 1 : 0;
+				return success !== 3;
+			}, true),
+		),
+	)) {
+		values.push(value);
+	}
+
+	expect(values).toEqual([
+		{ state: 'loading' },
+		{ state: 'success', data: true },
+		{ state: 'loading' },
+		{ state: 'success', data: false },
+
+		// true was unsubscribed too, so it loses its cache
+		{ state: 'loading' },
+		{ state: 'success', data: true },
+	]);
+});
+
+it('ignores following params with same key', async () => {
+	const values = [];
+
+	for await (const value of eachValueFrom(
+		query(
+			'test',
+			interval(5).pipe(
+				take(5),
+				map((_, i) => (i < 4 ? 'same' : 'other')),
+			),
+			(result) => of(result),
+		).pipe(takeWhile((x) => x.data !== 'other', true)),
+	)) {
+		values.push(value);
+	}
+
+	expect(values).toEqual([
+		{ state: 'loading' },
+		{ state: 'success', data: 'same' },
+		{ state: 'loading' },
+		{ state: 'success', data: 'other' },
+	]);
+});
+
+it('can disable cache', async () => {
+	const values = [];
+	let success = 0;
+	for await (const value of eachValueFrom(
+		query(
+			'test',
+			interval(5).pipe(
+				take(3),
+				map((x) => x % 2 === 0),
+			),
+			(bool) => of(bool),
+			{
+				cacheTime: 0,
+			},
+		).pipe(
+			takeWhile((x) => {
+				success += x.state === 'success' ? 1 : 0;
+				return success !== 3;
+			}, true),
+		),
+	)) {
+		values.push(value);
+	}
+
+	expect(values).toEqual([
+		{ state: 'loading' },
+		{ state: 'success', data: true },
+		{ state: 'loading' },
+		{ state: 'success', data: false },
 
 		// no cache -> data is undefined
-		{ state: 'loading', retries: 0 },
-		{ state: 'success', data: true, retries: 0 },
+		{ state: 'loading' },
+		{ state: 'success', data: true },
 	]);
 });
 
@@ -212,11 +291,9 @@ it('invokes query on refresh', async () => {
 	let i = 20;
 
 	for await (const value of eachValueFrom(
-		query(() => of(i++), {
+		query('test', () => of(i++), {
 			refetchInterval: 5,
-			// can still refresh with an interval when refresh is disabled
-			disableRefresh: true,
-		}).pipe(takeWhile(() => i <= 24)),
+		}).pipe(takeWhile(() => i <= 24, true)),
 	)) {
 		values.push(value);
 	}
@@ -224,42 +301,42 @@ it('invokes query on refresh', async () => {
 	expect(values).toEqual([
 		{
 			state: 'loading',
-			retries: 0,
 		},
 		{
 			state: 'success',
 			data: 20,
-			retries: 0,
 		},
 		{
 			state: 'refreshing',
 			data: 20,
-			retries: 0,
 		},
 		{
 			state: 'success',
 			data: 21,
-			retries: 0,
 		},
 		{
 			state: 'refreshing',
 			data: 21,
-			retries: 0,
 		},
 		{
 			state: 'success',
 			data: 22,
-			retries: 0,
 		},
 		{
 			state: 'refreshing',
 			data: 22,
-			retries: 0,
 		},
 		{
 			state: 'success',
 			data: 23,
-			retries: 0,
+		},
+		{
+			state: 'refreshing',
+			data: 23,
+		},
+		{
+			state: 'success',
+			data: 24,
 		},
 	]);
 });
@@ -273,10 +350,8 @@ it('invokes query on focus', async () => {
 	}, 10);
 
 	for await (const value of eachValueFrom(
-		query(() => of(i++), {
+		query('test', () => of(i++), {
 			refetchOnWindowFocus: true,
-			// can still refresh with an interval when refresh is disabled
-			disableRefresh: true,
 		}).pipe(take(4)),
 	)) {
 		values.push(value);
@@ -285,45 +360,44 @@ it('invokes query on focus', async () => {
 	expect(values).toEqual([
 		{
 			state: 'loading',
-			retries: 0,
 		},
 		{
 			state: 'success',
 			data: 20,
-			retries: 0,
 		},
 		// refetch because window is focused
 		{
 			state: 'refreshing',
 			data: 20,
-			retries: 0,
 		},
 		{
 			state: 'success',
 			data: 21,
-			retries: 0,
 		},
 	]);
 });
 
-it('can disable refresh on cached data', async () => {
+it('can disable refresh on data when data is still fresh', async () => {
 	const values = [];
 	let success = 0;
 
+	// keep true alive, to keep the true group alive
+	const sub = query('test', true, () => of(true), {
+		staleTime: Number.POSITIVE_INFINITY,
+	}).subscribe();
+
 	for await (const value of eachValueFrom(
 		query(
+			'test',
 			interval(5).pipe(
 				take(3),
 				map((x) => x % 2 === 0),
 			),
 			(bool) => of(bool),
-			{
-				disableRefresh: true,
-			},
 		).pipe(
 			takeWhile((x) => {
 				success += x.state === 'success' ? 1 : 0;
-				return success !== 3;
+				return success !== 2;
 			}, true),
 		),
 	)) {
@@ -331,13 +405,11 @@ it('can disable refresh on cached data', async () => {
 	}
 
 	expect(values).toEqual([
-		{ state: 'loading', retries: 0 },
-		{ state: 'success', data: true, retries: 0 },
-		{ state: 'loading', retries: 0 },
-		{ state: 'success', data: false, retries: 0 },
-
-		// doesn't fire a load
-		// { state: 'refreshing', retries: 0, data: true },
-		{ state: 'success', data: true, retries: 0 },
+		// doesn't fire a load, nor a refresh
+		{ state: 'success', data: true },
+		{ state: 'loading' },
+		{ state: 'success', data: false },
 	]);
+
+	sub.unsubscribe();
 });

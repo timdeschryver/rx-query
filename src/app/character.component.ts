@@ -27,12 +27,13 @@ import { RickAndMortyService } from './rickandmorty.service';
 })
 export class CharacterComponent {
 	character$ = query(
+		'character',
 		this.activatedRoute.params.pipe(pluck('characterId')),
 		(characterId: number) => this.rickAndMortyService.getCharacter(characterId),
 		{
-			disableCache: false,
 			refetchOnWindowFocus: true,
 			refetchInterval: 60000,
+			cacheTime: 10000,
 			retries: (n, error) => n < 3 && error !== 'totally broken',
 			retryDelay: (n) => (n + 1) * 1000,
 		},

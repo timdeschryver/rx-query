@@ -127,11 +127,8 @@ export type QueryConfig = {
 	retryDelay?: number | ((retryAttempt: number) => number);
 	refetchInterval?: number | Observable<unknown>;
 	refetchOnWindowFocus?: boolean;
-	disableCache?: boolean;
-	disableRefresh?: boolean;
-	mapOperator?: <T, O extends ObservableInput<any>>(
-		project: (value: T, index: number) => O,
-	) => OperatorFunction<T, ObservedValueOf<O>>;
+	staleTime?: number;
+	cacheTime?: number;
 };
 ```
 
@@ -206,56 +203,37 @@ Usage:
 }
 ```
 
-### `disableCache`
+### `cacheTime`
 
-Disable the cache for that query.
-The cache key is determined by using the `JSON.stringify` method on the input.
+Set the cache time (in milliseconds) for a query key.
 
-Default: `false`
+Default: `30_000` (5 minutes)
 
 Usage:
 
 ```ts
 {
-	disableCache: true,
+	cacheTime: 60_000,
 }
 ```
 
-### `disableRefresh`
+### `staleTime`
 
-Don't invoke the query if the cache key is already present in the cache when the query receives the same input.
-When one of the `refetchInterval` or `refetchOnWindowFocus` options are enabled, they will still refresh the cache in the background.
+Decides when a query should be refetched when it receives a trigger.
 
-Default: `false`
-
-Usage:
-
-```ts
-{
-	disableCache: true,
-}
-```
-
-### `mapOperator`
-
-Setting the mapping operator (`mergeMap`, `flatMap`, `concatMap`, `exhaustMap`, `switchMap`).
-
-Default: `switchMap`
+Default: `0`
 
 Usage:
 
 ```ts
 {
-	mapOperator: `mergeMap`,
+	staleTime: 60_000,
 }
 ```
 
 ## Inspiration
 
-This library is inspired by [react-query](https://github.com/tannerlinsley/react-query), written by
-[Tanner Linsley](https://twitter.com/tannerlinsley).
+This library is inspired by:
 
-## Todo
-
-- refresh on demand
-- remove stale cache
+- [react-query](https://github.com/tannerlinsley/react-query), written by [Tanner Linsley](https://twitter.com/tannerlinsley)
+- [vercel/swr](https://github.com/vercel/swr)
