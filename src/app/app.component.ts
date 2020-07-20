@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
-import { pluck } from 'rxjs/operators';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Subject } from 'rxjs';
+import { pluck, takeUntil } from 'rxjs/operators';
 
-import { query } from '../../rx-query';
+import { query, prefetch } from '../../rx-query';
 
 import { RickAndMortyService } from './rickandmorty.service';
 
@@ -19,10 +20,16 @@ import { RickAndMortyService } from './rickandmorty.service';
 				<div *ngSwitchDefault>
 					<ul>
 						<li *ngFor="let character of characters.data">
-							<a [routerLink]="character.id">{{ character.name }}</a>
+							<a
+								[routerLink]="character.id"
+								(mouseenter)="characterPrefetcher.next(character.id)"
+								>{{ character.name }}</a
+							>
 						</li>
 						<li>
-							<a routerLink="9999">Throw an error</a>
+							<a routerLink="9999" (mouseenter)="characterPrefetcher.next(9999)"
+								>Throw an error</a
+							>
 						</li>
 					</ul>
 				</div>
@@ -31,7 +38,10 @@ import { RickAndMortyService } from './rickandmorty.service';
 		<router-outlet></router-outlet>
 	`,
 })
-export class AppComponent {
+export class AppComponent implements OnInit, OnDestroy {
+	destroyer = new Subject();
+	characterPrefetcher = new Subject<number>();
+
 	characters$ = query(
 		'characters',
 		() => this.rickAndMortyService.getCharacters().pipe(pluck('results')),
@@ -42,4 +52,31 @@ export class AppComponent {
 	);
 
 	constructor(private rickAndMortyService: RickAndMortyService) {}
+
+	ngOnInit(): void {
+		prefetch(
+			'character',
+			this.characterPrefetcher.pipe(takeUntil(this.destroyer)),
+			(characterId: number) =>
+				this.rickAndMortyService.getCharacter(characterId),
+			{
+				staleTime: 50000,
+			},
+		);
+
+		prefetch(
+			'character',
+			5,
+			(characterId: number) =>
+				this.rickAndMortyService.getCharacter(characterId),
+			{
+				staleTime: 50000,
+			},
+		);
+	}
+
+	ngOnDestroy(): void {
+		this.destroyer.next();
+		this.destroyer.complete();
+	}
 }
