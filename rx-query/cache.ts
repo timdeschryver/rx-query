@@ -127,6 +127,9 @@ export const cache = revalidate.pipe(
 					const invoker = revalidator
 						.query(intialState, revalidator.params)
 						.pipe(
+							takeUntil(
+								group.pipe(filter((r) => r.trigger === 'group-unsubscribe')),
+							),
 							map(
 								(queryResult): GroupState => {
 									return {
