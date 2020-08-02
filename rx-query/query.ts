@@ -27,6 +27,7 @@ import {
 	pairwise,
 	concatMap,
 	share,
+	shareReplay,
 } from 'rxjs/operators';
 import { revalidate, cache } from './cache';
 import { QueryOutput, QueryConfig, Revalidator } from './types';
@@ -156,9 +157,14 @@ export function query<
 		return cache.pipe(
 			withLatestFrom(params$),
 			map(([c, k]) => c[k.key]),
-			filter((v) => !!v),
-			map((v) => v.result),
-			distinctUntilChanged((a, b) => a === b),
+			filter(
+				(v) =>
+					!!v &&
+					// exclude state changes that are unimportant to consumer
+					!['query-unsubscribe', 'group-unsubscribe'].includes(v.trigger),
+			),
+			map((v) => v.state.result),
+			distinctUntilChanged(),
 			finalize(() => {
 				params$.pipe(take(1)).subscribe((params) => {
 					revalidate.next({
@@ -222,6 +228,7 @@ function paramsTrigger<QueryParam, QueryResult>(
 			revalidates.push(init);
 			return revalidates;
 		}),
+		shareReplay(),
 	);
 }
 

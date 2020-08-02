@@ -7,7 +7,7 @@ export interface Trigger<T> {
 }
 
 export type QueryOutput<QueryResult = any> = {
-	state: 'success' | 'error' | 'loading' | 'refreshing';
+	state: 'idle' | 'success' | 'error' | 'loading' | 'refreshing';
 	data?: QueryResult;
 	error?: unknown;
 	retries?: number;

@@ -14,7 +14,6 @@ import {
 	takeUntil,
 } from 'rxjs/operators';
 import { QueryOutput, Revalidator } from './types';
-import { isDebug } from './debug';
 
 export const revalidate = new Subject<Revalidator>();
 
@@ -49,8 +48,7 @@ export const cache = revalidate.pipe(
 	map((group) =>
 		group.pipe(
 			observeOn(asapScheduler),
-			// ignore group-unsubscribe, it doesn't affect the state nor the subscribers
-			filter((p) => p.trigger !== 'group-unsubscribe'),
+
 			// keep a list of subscriptions
 			// unsubscribe from the group when all subscribers are unsubscribed
 			scan(
@@ -62,6 +60,9 @@ export const cache = revalidate.pipe(
 
 					subscriptions.revalidator = revalidator;
 					subscriptions.subscriptions += count[revalidator.trigger] || 0;
+					if (subscriptions.subscriptions < 0) {
+						subscriptions.subscriptions = 0;
+					}
 					return subscriptions;
 				},
 				{
@@ -72,7 +73,9 @@ export const cache = revalidate.pipe(
 			tap((group) => {
 				if (
 					group.subscriptions === 0 &&
-					group.revalidator.trigger !== 'group-remove'
+					!['group-remove', 'group-unsubscribe'].includes(
+						group.revalidator.trigger,
+					)
 				) {
 					revalidate.next({
 						...group.revalidator,
@@ -80,16 +83,19 @@ export const cache = revalidate.pipe(
 					});
 				}
 			}),
-			map((g) => g.revalidator),
-			// ignore query-unsubscribe, it doesn't affect the state
-			filter((revalidator) => revalidator.trigger !== 'query-unsubscribe'),
 			mergeScan(
-				({ groupState }, revalidator) => {
-					// short-circuit, there are no subscribers anymore
-					// need to pass something to clean up the entry from the cache
-					if (['group-remove'].includes(revalidator.trigger)) {
+				({ groupState }, { revalidator, subscriptions }) => {
+					// short-circuit, these triggers don't affect state
+					if (
+						['group-remove', 'query-unsubscribe', 'group-unsubscribe'].includes(
+							revalidator.trigger,
+						)
+					) {
 						return of({
-							groupState,
+							groupState: {
+								...groupState,
+								subscriptions,
+							},
 							trigger: revalidator.trigger,
 						});
 					}
@@ -104,7 +110,7 @@ export const cache = revalidate.pipe(
 						return of({ groupState, trigger: revalidator.trigger });
 					}
 
-					// return the cached data when it's still  fresh
+					// return the cached data when it's still fresh
 					if (groupState.staleAt && groupState.staleAt > Date.now()) {
 						const cached: GroupState = {
 							...groupState,
@@ -132,13 +138,20 @@ export const cache = revalidate.pipe(
 							),
 							map(
 								(queryResult): GroupState => {
+									const now = Date.now();
 									return {
 										key: revalidator.key,
 										result: queryResult,
 										staleAt:
 											queryResult.state === 'success'
-												? Date.now() + revalidator.config.staleTime
+												? now + revalidator.config.staleTime
 												: undefined,
+										removeCacheAt:
+											queryResult.state === 'success'
+												? now + revalidator.config.cacheTime
+												: undefined,
+										// ignore subscriptions, query could already be unsubscribed to and this will re-create a subscription because this subscription is outdate
+										subscriptions: undefined,
 									};
 								},
 							),
@@ -151,6 +164,7 @@ export const cache = revalidate.pipe(
 							...(hasCache ? { data: groupState.result?.data } : {}),
 						},
 						staleAt: groupState.staleAt,
+						subscriptions,
 					};
 
 					return scheduled([of(initial), invoker], asapScheduler).pipe(
@@ -166,10 +180,13 @@ export const cache = revalidate.pipe(
 				{
 					groupState: {
 						key: 'unknown',
-						state: 'idle',
 						staleAt: undefined,
+						subscriptions: 0,
+						result: {
+							state: 'idle',
+						},
 					} as GroupState,
-					trigger: 'unknown',
+					trigger: 'unknown' as Revalidator['trigger'],
 				},
 			),
 		),
@@ -179,26 +196,31 @@ export const cache = revalidate.pipe(
 	scan(
 		(_cache, { groupState, trigger }) => {
 			if (trigger === 'group-remove') {
-				const { [groupState.key]: _removeKey, ...remainingCache } = _cache;
+				const { [groupState.key]: _removeGroupKey, ...remainingCache } = _cache;
 				return remainingCache;
 			}
 
 			return {
 				..._cache,
 				[groupState.key]: {
-					key: groupState.key,
-					result: groupState.result!,
+					state: {
+						...groupState,
+						subscriptions:
+							groupState.subscriptions === undefined
+								? _cache[groupState.key]?.state.subscriptions
+								: groupState.subscriptions,
+					},
+					trigger: trigger,
 				},
 			};
 		},
 		{} as {
 			[key: string]: {
-				key: string;
-				result: QueryOutput<any>;
+				state: GroupState;
+				trigger: Revalidator['trigger'];
 			};
 		},
 	),
-	tap((c) => (isDebug() ? console.log(c) : {})),
 	share(),
 );
 
@@ -209,6 +231,8 @@ type GroupSubscription = {
 
 type GroupState = {
 	key: string;
-	result?: QueryOutput<any>;
+	result: QueryOutput<any>;
 	staleAt?: number;
+	removeCacheAt?: number;
+	subscriptions?: number;
 };

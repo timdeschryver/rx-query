@@ -1,5 +1,5 @@
 import { Observable, of, isObservable } from 'rxjs';
-import { take, tap } from 'rxjs/operators';
+import { take, mergeMap } from 'rxjs/operators';
 import { query } from './query';
 import { QueryConfig } from './types';
 
@@ -30,10 +30,8 @@ export function prefetch<
 
 	queryParam
 		.pipe(
-			tap((parameter) =>
-				query(key, parameter, inputQuery, queryConfig)
-					.pipe(take(1))
-					.subscribe(),
+			mergeMap((parameter) =>
+				query(key, parameter, inputQuery, queryConfig).pipe(take(1)),
 			),
 		)
 		.subscribe();
