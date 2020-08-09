@@ -106,7 +106,7 @@ export function query<
 						retryCondition(result.retries || 0, result.error)
 					) {
 						return timer(retryDelay(result.retries || 0)).pipe(
-							switchMap(() => invoke((result.retries || 0) + 1)),
+							concatMap(() => invoke((result.retries || 0) + 1)),
 							// retry internally
 							// for consumers we're still loading
 							startWith({

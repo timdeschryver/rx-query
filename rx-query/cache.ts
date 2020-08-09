@@ -12,6 +12,7 @@ import {
 	filter,
 	switchMap,
 	takeUntil,
+	concatAll,
 } from 'rxjs/operators';
 import { QueryOutput, Revalidator } from './types';
 
@@ -87,9 +88,7 @@ export const cache = revalidate.pipe(
 				({ groupState }, { revalidator, subscriptions }) => {
 					// short-circuit, these triggers don't affect state
 					if (
-						['group-remove', 'query-unsubscribe', 'group-unsubscribe'].includes(
-							revalidator.trigger,
-						)
+						['group-remove', 'query-unsubscribe'].includes(revalidator.trigger)
 					) {
 						return of({
 							groupState: {
@@ -98,6 +97,33 @@ export const cache = revalidate.pipe(
 							},
 							trigger: revalidator.trigger,
 						});
+					}
+
+					if (revalidator.trigger === 'group-unsubscribe') {
+						if (
+							groupState.result.state === 'loading' ||
+							groupState.result.state === 'refreshing'
+						) {
+							return of({
+								groupState: {
+									...groupState,
+									result: {
+										...groupState.result,
+										state: 'success' as QueryOutput['state'],
+									},
+									subscriptions,
+								},
+								trigger: revalidator.trigger,
+							});
+						} else {
+							return of({
+								groupState: {
+									...groupState,
+									subscriptions,
+								},
+								trigger: revalidator.trigger,
+							});
+						}
 					}
 
 					// we're already revalidating the cache
@@ -168,7 +194,7 @@ export const cache = revalidate.pipe(
 					};
 
 					return scheduled([of(initial), invoker], asapScheduler).pipe(
-						mergeAll(),
+						concatAll(),
 						map((r) => {
 							return {
 								groupState: r,
@@ -198,6 +224,13 @@ export const cache = revalidate.pipe(
 			if (trigger === 'group-remove') {
 				const { [groupState.key]: _removeGroupKey, ...remainingCache } = _cache;
 				return remainingCache;
+			}
+
+			if (trigger === 'group-unsubscribe') {
+				const { [groupState.key]: removeGroupKey, ...remainingCache } = _cache;
+				if (removeGroupKey.state.result.data === undefined) {
+					return remainingCache;
+				}
 			}
 
 			return {
