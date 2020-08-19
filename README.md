@@ -178,7 +178,7 @@ Usage:
 
 Invoke the query in the background every x milliseconds, and emit the new value when the query is resolved.
 
-Default: `undefined`
+Default: `Number.MAX_VALUE`
 
 Usage:
 

@@ -15,7 +15,6 @@ import {
 	map,
 	startWith,
 	catchError,
-	switchMap,
 	expand,
 	debounce,
 	withLatestFrom,
@@ -36,7 +35,7 @@ export const DEFAULT_QUERY_CONFIG: Required<QueryConfig> = {
 	retries: 3,
 	retryDelay: (n) => (n + 1) * 1000,
 	refetchOnWindowFocus: false,
-	refetchInterval: undefined as any,
+	refetchInterval: Number.MAX_VALUE,
 	staleTime: 0,
 	cacheTime: 30_0000, // 5 minutes
 };
@@ -168,11 +167,8 @@ export function query<
 			finalize(() => {
 				params$.pipe(take(1)).subscribe((params) => {
 					revalidate.next({
-						key: params.key,
-						query: invokeQuery,
+						...params,
 						trigger: 'query-unsubscribe',
-						params,
-						config: queryConfig,
 					});
 				});
 
@@ -238,8 +234,7 @@ function intervalTrigger<QueryParam, QueryResult>(
 	key: string,
 	invokeQuery: QueryInvoker<QueryParam, QueryResult>,
 ): Observable<Revalidator<QueryParam, QueryResult>> {
-	return queryConfig.refetchInterval !== undefined &&
-		queryConfig.refetchInterval !== null
+	return queryConfig.refetchInterval !== Number.MAX_VALUE
 		? (isObservable(queryConfig.refetchInterval)
 				? queryConfig.refetchInterval
 				: interval(queryConfig.refetchInterval)

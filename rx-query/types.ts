@@ -29,6 +29,7 @@ export type Revalidator<P = any, R = any> = {
 		| 'query-unsubscribe' // remove previous group
 		| 'interval' // refresh after x ms
 		| 'focus' // refresh after re-focus
+		| 'manual' // manual refresh
 		| 'group-unsubscribe' // all subscribers are unsubscribed for a group
 		| 'group-remove'; // remove the group after x ms after unsubscribe
 	params: P;

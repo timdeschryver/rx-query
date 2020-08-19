@@ -29,7 +29,7 @@ import { query } from '../../rx-query';
 				</div>
 			</div>
 		</div>
-		
+		<rx-query-devtool></rx-query-devtool>
 	`,
 })
 export class BasicComponent {

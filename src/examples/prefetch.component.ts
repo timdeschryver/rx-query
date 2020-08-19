@@ -54,9 +54,9 @@ import { Subject } from 'rxjs';
 						</div>
 					</div>
 				</ng-container>
-				
 			</div>
 		</div>
+		<rx-query-devtool></rx-query-devtool>
 	`,
 })
 export class PrefetchComponent {

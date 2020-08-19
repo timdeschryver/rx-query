@@ -1,20 +1,22 @@
-import { Component } from '@angular/core';
-import { map } from 'rxjs/operators';
+import { ChangeDetectorRef, Component } from '@angular/core';
+import { timer } from 'rxjs';
+import { map, mapTo, tap } from 'rxjs/operators';
 
-import { cache } from '../../rx-query';
+import { cache, revalidate } from '../../rx-query';
 
 @Component({
 	selector: 'rx-query-devtool',
 	template: `
+		<h3 *ngIf="refresher$ | async">Rx Queries</h3>
 		<div id="rx-query-devtool">
-			<ul>
-				<li *ngFor="let entry of cache$ | async">
-					<div>{{ entry.subscriptions }}</div>
-					<div>{{ entry.key }}</div>
-					<div>{{ entry.state }}</div>
-					<div>Remove at: {{ entry.removeCacheAt }}</div>
-				</li>
-			</ul>
+			<div *ngFor="let entry of cache$ | async" (click)="logClicked(entry)">
+				<div [attr.data-state]="getState(entry)" class="subscriptions">
+					{{ entry.subscriptions }}
+				</div>
+				<div class="key">{{ entry.key }}</div>
+				<button (click)="intervalClicked(entry.key)">Refresh</button>
+				<button (click)="removeClicked(entry.key)">Remove</button>
+			</div>
 		</div>
 	`,
 	styles: [
@@ -23,13 +25,65 @@ import { cache } from '../../rx-query';
 				position: fixed;
 				bottom: 0;
 				left: 0;
-				right: 0;
-				background: rgba(0, 0, 0, 0.5);
-				height: 300px;
+				height: 200px;
+				width: 100%;
+				background: rgba(255, 255, 255, 0.5);
+				overflow: auto;
+				padding: 8px;
+				border-top: 1px solid rgba(0, 0, 0, 0.2);
 			}
 
-			:host li {
-				display: flex;
+			#rx-query-devtool > div {
+				display: grid;
+				grid-template-columns: 2rem 1fr repeat(2, auto);
+				gap: 5px;
+				cursor: pointer;
+				line-height: 2;
+				margin-top: 3px;
+			}
+
+			#rx-query-devtool > div > * {
+				padding: 3px;
+			}
+
+			#rx-query-devtool > div:hover {
+				background: rgba(0, 0, 0, 0.2);
+			}
+
+			button {
+				padding: 5px 8px;
+				border-radius: 8px;
+				border: 1px solid rgba(0, 0, 0, 0.5);
+				background: rgba(255, 255, 255, 0.5);
+			}
+
+			button:hover {
+				background: rgba(0, 0, 0, 0.2);
+			}
+
+			.subscriptions {
+				text-align: center;
+				border-radius: 8px;
+			}
+
+			.subscriptions[data-state='fresh'] {
+				background: limegreen;
+			}
+
+			.subscriptions[data-state='stale'] {
+				background: gold;
+			}
+
+			.subscriptions[data-state='error'] {
+				background: crimson;
+			}
+
+			.subscriptions[data-state='loading'] {
+				background: deepskyblue;
+			}
+
+			.subscriptions[data-state='refreshing'] {
+				background: lightseagreen;
 			}
 		`,
 	],
@@ -40,30 +94,40 @@ export class RxQueryDevToolComponent {
 			return Object.entries(c).map(([key, value]) => {
 				return {
 					key,
+					data: value.state.result.data,
 					subscriptions: value.state.subscriptions,
 					state: value.state.result.state,
-					removeCacheAt: value.state.subscriptions
-						? '/'
-						: new Intl.DateTimeFormat('default', {
-								year: 'numeric',
-								month: 'numeric',
-								day: 'numeric',
-								hour: 'numeric',
-								minute: 'numeric',
-								second: 'numeric',
-						  }).format(value.state.removeCacheAt),
-					staleAt: value.state.subscriptions
-						? '/'
-						: new Intl.DateTimeFormat('default', {
-								year: 'numeric',
-								month: 'numeric',
-								day: 'numeric',
-								hour: 'numeric',
-								minute: 'numeric',
-								second: 'numeric',
-						  }).format(value.state.staleAt),
+					staleAt: value.state.staleAt,
+					removeCacheAt: value.state.removeCacheAt,
 				};
 			});
 		}),
 	);
+
+	refresher$ = timer(0, 1000).pipe(
+		mapTo(true),
+		tap(() => this.cdr.markForCheck()),
+	);
+
+	constructor(private cdr: ChangeDetectorRef) {}
+
+	removeClicked(key: string): void {
+		revalidate.next({ key, trigger: 'group-remove' } as any);
+	}
+
+	intervalClicked(key: string): void {
+		revalidate.next({ key, trigger: 'manual' } as any);
+	}
+
+	getState(entry: any) {
+		return entry.state === 'success'
+			? (entry.staleAt || 0) > Date.now()
+				? 'fresh'
+				: 'stale'
+			: entry.state;
+	}
+
+	logClicked(entry: unknown): void {
+		console.log(entry);
+	}
 }

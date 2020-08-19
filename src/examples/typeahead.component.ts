@@ -23,7 +23,7 @@ import { query } from '../../rx-query';
 					/>
 				</div>
 
-				<ng-container  *ngIf="results$ | async as result">
+				<ng-container *ngIf="results$ | async as result">
 					<div [ngSwitch]="result.state">
 						<ng-container *ngSwitchDefault>
 							<div
@@ -54,9 +54,9 @@ import { query } from '../../rx-query';
 						</div>
 					</div>
 				</ng-container>
-				
 			</div>
 		</div>
+		<rx-query-devtool></rx-query-devtool>
 	`,
 })
 export class TypeAheadComponent {

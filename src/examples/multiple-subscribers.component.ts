@@ -38,7 +38,7 @@ import { query } from '../../rx-query';
 				</div>
 			</ng-container>
 		</div>
-		
+		<rx-query-devtool></rx-query-devtool>
 	`,
 	styles: [
 		`

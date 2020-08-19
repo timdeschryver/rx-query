@@ -20,7 +20,7 @@ import { query } from '../../rx-query';
 				</ng-container>
 			</ng-container>
 		</h2>
-		
+		<rx-query-devtool></rx-query-devtool>
 	`,
 })
 export class RefreshOnIntervalComponent {

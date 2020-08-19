@@ -36,6 +36,8 @@ import { RickAndMortyService } from './rickandmorty.service';
 			</ng-container>
 		</ng-container>
 		<router-outlet></router-outlet>
+
+		<rx-query-devtool></rx-query-devtool>
 	`,
 })
 export class AppComponent implements OnInit, OnDestroy {

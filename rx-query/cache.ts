@@ -26,20 +26,23 @@ export const cache = revalidate.pipe(
 		(r) => r,
 		(group) =>
 			group.pipe(
-				// cleanup the group when the whole group is unsubscribed,
-				// after x milliseconds. This gives us a new cache for the group.
 				takeUntil(
 					group.pipe(
-						filter((g) => g.trigger !== 'group-remove'),
 						switchMap((g) => {
-							if (g.trigger === 'group-unsubscribe') {
-								return timer(g.config.cacheTime).pipe(
-									tap(() => {
-										revalidate.next({ ...g, trigger: 'group-remove' });
-									}),
-								);
+							switch (g.trigger) {
+								case 'group-remove':
+									return of(g);
+								case 'group-unsubscribe':
+									// cleanup the group when the whole group is unsubscribed,
+									// after x milliseconds. This gives us a new cache for the group.
+									return timer(g.config.cacheTime).pipe(
+										tap(() => {
+											revalidate.next({ ...g, trigger: 'group-remove' });
+										}),
+									);
+								default:
+									return EMPTY;
 							}
-							return EMPTY;
 						}),
 					),
 				),
@@ -54,16 +57,27 @@ export const cache = revalidate.pipe(
 			// unsubscribe from the group when all subscribers are unsubscribed
 			scan(
 				(subscriptions, revalidator) => {
-					const count = {
+					if (
+						subscriptions.subscriptions == 0 &&
+						['interval', 'focus'].includes(revalidator.trigger)
+					) {
+						revalidator.trigger = 'query-subscribe';
+					}
+
+					const increment = {
 						'query-subscribe': +1,
 						'query-unsubscribe': -1,
 					} as { [index: string]: number };
 
-					subscriptions.revalidator = revalidator;
-					subscriptions.subscriptions += count[revalidator.trigger] || 0;
-					if (subscriptions.subscriptions < 0) {
-						subscriptions.subscriptions = 0;
-					}
+					subscriptions.revalidator = {
+						...subscriptions.revalidator,
+						...revalidator,
+					};
+					subscriptions.subscriptions += increment[revalidator.trigger] || 0;
+					subscriptions.subscriptions = Math.max(
+						subscriptions.subscriptions,
+						0,
+					);
 					return subscriptions;
 				},
 				{
@@ -133,13 +147,21 @@ export const cache = revalidate.pipe(
 						groupState.result &&
 						['loading', 'refreshing'].includes(groupState.result.state)
 					) {
-						return of({ groupState, trigger: revalidator.trigger });
+						return of({
+							groupState: { ...groupState, subscriptions },
+							trigger: revalidator.trigger,
+						});
 					}
 
 					// return the cached data when it's still fresh
-					if (groupState.staleAt && groupState.staleAt > Date.now()) {
+					if (
+						revalidator.trigger !== 'manual' &&
+						groupState.staleAt &&
+						groupState.staleAt > Date.now()
+					) {
 						const cached: GroupState = {
 							...groupState,
+							subscriptions,
 							result: {
 								state: 'success',
 								data: groupState.result?.data,
@@ -176,7 +198,7 @@ export const cache = revalidate.pipe(
 											queryResult.state === 'success'
 												? now + revalidator.config.cacheTime
 												: undefined,
-										// ignore subscriptions, query could already be unsubscribed to and this will re-create a subscription because this subscription is outdate
+										// ignore subscriptions, query could already be unsubscribed and this will re-create a subscription because this subscription is outdate
 										subscriptions: undefined,
 									};
 								},
@@ -228,7 +250,7 @@ export const cache = revalidate.pipe(
 
 			if (trigger === 'group-unsubscribe') {
 				const { [groupState.key]: removeGroupKey, ...remainingCache } = _cache;
-				if (removeGroupKey.state.result.data === undefined) {
+				if (removeGroupKey?.state.result.data === undefined) {
 					return remainingCache;
 				}
 			}
@@ -240,7 +262,7 @@ export const cache = revalidate.pipe(
 						...groupState,
 						subscriptions:
 							groupState.subscriptions === undefined
-								? _cache[groupState.key]?.state.subscriptions
+								? _cache[groupState.key]?.state.subscriptions ?? 0
 								: groupState.subscriptions,
 					},
 					trigger: trigger,

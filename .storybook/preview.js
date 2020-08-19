@@ -1,3 +1,6 @@
+// Storybook executes this module in both bootstap phase (Node)
+// and a story's runtime (browser). However, cannot call `setupWorker`
+// in Node environment, so need to check if we're in a browser.
 if (typeof global.process === "undefined") {
 	const { worker } = require("../src/examples/mocks");
 
