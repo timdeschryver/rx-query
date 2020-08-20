@@ -24,11 +24,13 @@
 		"README.md",
 		"dist"
 	],
+	"private": false,
 	"scripts": {
 		"ng": "ng",
 		"start": "ng serve",
 		"build:angular": "ng build",
 		"test": "jest",
+		"test:types": "tsd",
 		"lint": "eslint \"./**/*.{js,ts}\"",
 		"dist": "yarn run dist:clean && yarn run dist:build",
 		"dist:build": "yarn run dist:build:cjs && yarn run dist:build:esm",
@@ -40,7 +42,15 @@
 		"build-storybook": "build-storybook",
 		"deploy-storybook": "storybook-to-ghpages"
 	},
-	"private": false,
+	"tsd": {
+		"directory": "rx-query",
+		"compilerOptions": {
+			"lib": [
+				"es2018",
+				"dom"
+			]
+		}
+	},
 	"peerDependencies": {
 		"rxjs": "^6.0.0"
 	},
@@ -90,6 +100,7 @@
 		"rxjs-for-await": "^0.0.2",
 		"ts-jest": "^26.1.1",
 		"ts-node": "~8.3.0",
+		"tsd": "^0.13.1",
 		"tslib": "^2.0.0",
 		"typescript": "^3.9.6",
 		"zone.js": "~0.10.3"

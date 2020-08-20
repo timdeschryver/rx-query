@@ -119,7 +119,7 @@ export class RxQueryDevToolComponent {
 		revalidate.next({ key, trigger: 'manual' } as any);
 	}
 
-	getState(entry: any) {
+	getState(entry: { state: string; staleAt: number }) {
 		return entry.state === 'success'
 			? (entry.staleAt || 0) > Date.now()
 				? 'fresh'

@@ -28,7 +28,7 @@ export class RefreshOnIntervalComponent {
 		'example-refresh-on-focus',
 		() =>
 			this.http.get('/now').pipe(
-				map((utc: any) => {
+				map((utc: { timestamp: number }) => {
 					return {
 						time: new Intl.DateTimeFormat('default', {
 							year: 'numeric',

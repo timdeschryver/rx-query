@@ -40,44 +40,34 @@ export const DEFAULT_QUERY_CONFIG: Required<QueryConfig> = {
 	cacheTime: 30_0000, // 5 minutes
 };
 
-export function query<
-	QueryParam,
-	QueryResult,
-	Query extends (params: QueryParam) => Observable<QueryResult>
->(
+export function query<QueryParam, QueryResult>(
 	key: string,
-	query: Query,
+	query: (params: QueryParam) => Observable<QueryResult>,
 	config?: QueryConfig,
 ): Observable<QueryOutput<QueryResult>>;
-export function query<
-	QueryParam,
-	QueryResult,
-	Query extends (params: QueryParam) => Observable<QueryResult>
->(
+export function query<QueryParam, QueryResult>(
 	key: string,
 	observableOrStaticParam: QueryParam | Observable<QueryParam>,
-	query: Query,
+	query: (params: QueryParam) => Observable<QueryResult>,
 	config?: QueryConfig,
 ): Observable<QueryOutput<QueryResult>>;
-export function query<
-	QueryParam,
-	QueryResult,
-	Query extends (params?: QueryParam) => Observable<QueryResult>
->(key: string, ...inputs: any[]): Observable<QueryOutput<QueryResult>> {
-	const { query, queryParam, queryConfig } = parseInput<QueryParam, Query>(
-		inputs,
-	);
+
+export function query(
+	key: string,
+	...inputs: unknown[]
+): Observable<QueryOutput<unknown>> {
+	const { query, queryParam, queryConfig } = parseInput(inputs);
 	const retryCondition = createRetryCondition(queryConfig);
 	const retryDelay = createRetryDelay(queryConfig);
 
-	const invokeQuery: QueryInvoker<QueryParam, QueryResult> = (
+	const invokeQuery: QueryInvoker = (
 		loadingState: string,
-		params?: QueryParam,
-	): Observable<QueryOutput<QueryResult>> => {
+		params?: unknown,
+	): Observable<QueryOutput> => {
 		const invoke = (retries: number) => {
 			return query(params).pipe(
 				map(
-					(data): QueryOutput<QueryResult> => {
+					(data): QueryOutput => {
 						return {
 							state: 'success',
 							data,
@@ -86,7 +76,7 @@ export function query<
 					},
 				),
 				catchError(
-					(error): Observable<QueryOutput<QueryResult>> => {
+					(error): Observable<QueryOutput> => {
 						return of({
 							state: 'error',
 							error,
@@ -97,7 +87,7 @@ export function query<
 			);
 		};
 
-		const callResult$: Observable<QueryOutput<QueryResult>> = defer(() =>
+		const callResult$: Observable<QueryOutput> = defer(() =>
 			invoke(0).pipe(
 				expand((result) => {
 					if (
@@ -111,7 +101,7 @@ export function query<
 							startWith({
 								...result,
 								state: loadingState,
-							} as QueryOutput<QueryResult>),
+							} as QueryOutput),
 						);
 					}
 
@@ -127,19 +117,9 @@ export function query<
 	};
 
 	return defer(() => {
-		const params$ = paramsTrigger<QueryParam, QueryResult>(
-			queryConfig,
-			queryParam,
-			key,
-			invokeQuery,
-		);
-		const focus$ = focusTrigger<QueryParam, QueryResult>(
-			queryConfig,
-			queryParam,
-			key,
-			invokeQuery,
-		);
-		const interval$ = intervalTrigger<QueryParam, QueryResult>(
+		const params$ = paramsTrigger(queryConfig, queryParam, key, invokeQuery);
+		const focus$ = focusTrigger(queryConfig, queryParam, key, invokeQuery);
+		const interval$ = intervalTrigger(
 			queryConfig,
 			queryParam,
 			key,
@@ -151,7 +131,9 @@ export function query<
 			asyncScheduler,
 		)
 			.pipe(mergeAll())
-			.subscribe((c) => revalidate.next(c));
+			.subscribe({
+				next: (c) => revalidate.next(c),
+			});
 
 		return cache.pipe(
 			withLatestFrom(params$),
@@ -162,7 +144,7 @@ export function query<
 					// exclude state changes that are unimportant to consumer
 					!['query-unsubscribe', 'group-unsubscribe'].includes(v.trigger),
 			),
-			map((v) => v.state.result),
+			map((v) => v.state.result as QueryOutput),
 			distinctUntilChanged(),
 			finalize(() => {
 				params$.pipe(take(1)).subscribe((params) => {
@@ -191,12 +173,12 @@ function createRetryCondition(queryConfig: Required<QueryConfig>) {
 		: queryConfig.retries || (() => false);
 }
 
-function paramsTrigger<QueryParam, QueryResult>(
+function paramsTrigger(
 	queryConfig: Required<QueryConfig>,
-	queryParam: Observable<QueryParam>,
+	queryParam: Observable<unknown>,
 	key: string,
-	invokeQuery: QueryInvoker<QueryParam, QueryResult>,
-): Observable<Revalidator<QueryParam, QueryResult>> {
+	invokeQuery: QueryInvoker,
+): Observable<Revalidator> {
 	return queryParam.pipe(
 		startWith(undefined),
 		distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
@@ -228,12 +210,12 @@ function paramsTrigger<QueryParam, QueryResult>(
 	);
 }
 
-function intervalTrigger<QueryParam, QueryResult>(
+function intervalTrigger(
 	queryConfig: Required<QueryConfig>,
-	queryParam: Observable<QueryParam>,
+	queryParam: Observable<unknown>,
 	key: string,
-	invokeQuery: QueryInvoker<QueryParam, QueryResult>,
-): Observable<Revalidator<QueryParam, QueryResult>> {
+	invokeQuery: QueryInvoker,
+): Observable<Revalidator> {
 	return queryConfig.refetchInterval !== Number.MAX_VALUE
 		? (isObservable(queryConfig.refetchInterval)
 				? queryConfig.refetchInterval
@@ -254,12 +236,12 @@ function intervalTrigger<QueryParam, QueryResult>(
 		: NEVER;
 }
 
-function focusTrigger<QueryParam, QueryResult>(
+function focusTrigger(
 	queryConfig: Required<QueryConfig>,
-	queryParam: Observable<QueryParam>,
+	queryParam: Observable<unknown>,
 	key: string,
-	invokeQuery: QueryInvoker<QueryParam, QueryResult>,
-): Observable<Revalidator<QueryParam, QueryResult>> {
+	invokeQuery: QueryInvoker,
+): Observable<Revalidator> {
 	return queryConfig.refetchOnWindowFocus
 		? fromEvent(window, 'focus').pipe(
 				withLatestFrom(queryParam),
@@ -277,7 +259,7 @@ function focusTrigger<QueryParam, QueryResult>(
 		: NEVER;
 }
 
-function parseInput<QueryParam, Query>(inputs: any[]) {
+function parseInput(inputs: unknown[]) {
 	const [firstInput, secondInput, thirdInput] = inputs;
 
 	const hasParamInput = typeof firstInput !== 'function';
@@ -286,11 +268,11 @@ function parseInput<QueryParam, Query>(inputs: any[]) {
 		? isObservable(firstInput)
 			? firstInput
 			: of(firstInput)
-		: of(null)) as Observable<QueryParam>;
+		: of(null)) as Observable<unknown>;
 
 	const query = (typeof firstInput === 'function'
 		? firstInput
-		: secondInput) as Query;
+		: secondInput) as (params?: unknown) => Observable<unknown>;
 
 	const inputConfig = (hasParamInput ? thirdInput : secondInput) as
 		| QueryConfig
@@ -322,7 +304,7 @@ function queryKeyAndParamsToCacheKey(key: string, params: unknown) {
 	return key;
 }
 
-type QueryInvoker<QueryParam, QueryResult> = (
+type QueryInvoker = (
 	state: string,
-	params?: QueryParam,
-) => Observable<QueryOutput<QueryResult>>;
+	params?: unknown,
+) => Observable<QueryOutput<unknown>>;

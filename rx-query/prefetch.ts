@@ -22,7 +22,7 @@ export function prefetch<
 	QueryParam,
 	QueryResult,
 	Query extends (params?: QueryParam) => Observable<QueryResult>
->(key: string, ...inputs: any[]): void {
+>(key: string, ...inputs: unknown[]): void {
 	const { query: inputQuery, queryParam, queryConfig } = parseInput<
 		QueryParam,
 		Query
@@ -37,7 +37,7 @@ export function prefetch<
 		.subscribe();
 }
 
-function parseInput<QueryParam, Query>(inputs: any[]) {
+function parseInput<QueryParam, Query>(inputs: unknown[]) {
 	const [firstInput, secondInput, thirdInput] = inputs;
 
 	const hasParamInput = typeof firstInput !== 'function';

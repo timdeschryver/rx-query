@@ -35,14 +35,21 @@ import { query } from '../../rx-query';
 export class BasicComponent {
 	repo$ = query('example-basic', () =>
 		this.http.get('https://api.github.com/repos/timdeschryver/rx-query').pipe(
-			map((repo: any) => {
-				return {
-					name: repo.name,
-					url: repo.html_url,
-					owner: repo.owner.login,
-					stars: repo.stargazers_count,
-				};
-			}),
+			map(
+				(repo: {
+					name: string;
+					html_url: string;
+					owner: { login: string };
+					stargazers_count: number;
+				}) => {
+					return {
+						name: repo.name,
+						url: repo.html_url,
+						owner: repo.owner.login,
+						stars: repo.stargazers_count,
+					};
+				},
+			),
 		),
 	);
 

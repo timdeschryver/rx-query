@@ -286,7 +286,7 @@ type GroupSubscription = {
 
 type GroupState = {
 	key: string;
-	result: QueryOutput<any>;
+	result: QueryOutput;
 	staleAt?: number;
 	removeCacheAt?: number;
 	subscriptions?: number;

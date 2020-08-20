@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs/operators';
 
 import { query } from '../../rx-query';
+import { QueryOutput } from '../../rx-query/types';
 
 @Component({
 	selector: 'example-multiple-subscribers',
@@ -49,16 +50,16 @@ import { query } from '../../rx-query';
 	],
 })
 export class MultipleSubscribersComponent {
-	consumers: any[] = [];
+	consumers: QueryOutput<unknown>[] = [];
 
 	constructor(private http: HttpClient) {}
 
 	addConsumer() {
-		const q: any = query(
+		const q = query(
 			'example-multiple-subscribers',
 			() =>
 				this.http.get('/now').pipe(
-					map((utc: any) => {
+					map((utc: { timestamp: number }) => {
 						return {
 							time: new Intl.DateTimeFormat('default', {
 								year: 'numeric',

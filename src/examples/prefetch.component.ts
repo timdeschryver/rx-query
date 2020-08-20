@@ -70,7 +70,7 @@ export class PrefetchComponent {
 
 	constructor(private http: HttpClient) {}
 
-	personHover(id: number) {
+	personHover(id: number): void {
 		prefetch(
 			'example-prefetch-person',
 			id,
@@ -81,7 +81,7 @@ export class PrefetchComponent {
 		);
 	}
 
-	personClick(id: number) {
+	personClick(id: number): void {
 		this.selectedPerson.next(id);
 	}
 }
