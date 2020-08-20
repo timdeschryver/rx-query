@@ -24,7 +24,7 @@ import { query } from '../../rx-query';
 				</div>
 
 				<ng-container *ngIf="results$ | async as result">
-					<div [ngSwitch]="result.state">
+					<div [ngSwitch]="result.status">
 						<ng-container *ngSwitchDefault>
 							<div
 								*ngFor="let person of result.data"

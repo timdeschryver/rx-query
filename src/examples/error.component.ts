@@ -10,7 +10,7 @@ import { query } from '../../rx-query';
 			class="max-w-sm rounded overflow-hidden shadow-lg"
 			*ngIf="repo$ | async as repo"
 		>
-			<ng-container [ngSwitch]="repo.state">
+			<ng-container [ngSwitch]="repo.status">
 				<div *ngSwitchDefault class="bg-white rounded-lg p-6">
 					<div class="text-center md:text-left">
 						<a class="text-lg text-blue-500" [href]="repo.data.url">{{

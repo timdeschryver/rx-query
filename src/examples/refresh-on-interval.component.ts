@@ -8,7 +8,7 @@ import { query } from '../../rx-query';
 	selector: 'example-refresh-on-interval',
 	template: `
 		<h2 class="text-blue-700 " *ngIf="time$ | async as time">
-			<ng-container [ngSwitch]="time.state">
+			<ng-container [ngSwitch]="time.status">
 				<ng-container *ngSwitchDefault>
 					{{ time.data.time }}
 				</ng-container>
@@ -27,8 +27,8 @@ export class RefreshOnIntervalComponent {
 	time$ = query(
 		'example-refresh-on-focus',
 		() =>
-			this.http.get('/now').pipe(
-				map((utc: { timestamp: number }) => {
+			this.http.get<{ timestamp: number }>('/now').pipe(
+				map((utc) => {
 					return {
 						time: new Intl.DateTimeFormat('default', {
 							year: 'numeric',

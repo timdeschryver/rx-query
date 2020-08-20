@@ -47,7 +47,7 @@ import { cache, revalidate } from '../../rx-query';
 			}
 
 			#rx-query-devtool > div:hover {
-				background: rgba(0, 0, 0, 0.2);
+				background: rgba(0, 0, 0, 0.1);
 			}
 
 			button {
@@ -96,7 +96,7 @@ export class RxQueryDevToolComponent {
 					key,
 					data: value.state.result.data,
 					subscriptions: value.state.subscriptions,
-					state: value.state.result.state,
+					status: value.state.result.status,
 					staleAt: value.state.staleAt,
 					removeCacheAt: value.state.removeCacheAt,
 				};
@@ -119,12 +119,12 @@ export class RxQueryDevToolComponent {
 		revalidate.next({ key, trigger: 'manual' } as any);
 	}
 
-	getState(entry: { state: string; staleAt: number }) {
-		return entry.state === 'success'
+	getState(entry: { status: string; staleAt: number }) {
+		return entry.status === 'success'
 			? (entry.staleAt || 0) > Date.now()
 				? 'fresh'
 				: 'stale'
-			: entry.state;
+			: entry.status;
 	}
 
 	logClicked(entry: unknown): void {

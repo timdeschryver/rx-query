@@ -61,7 +61,7 @@ export function query(
 	const retryDelay = createRetryDelay(queryConfig);
 
 	const invokeQuery: QueryInvoker = (
-		loadingState: string,
+		loadingStatus: string,
 		params?: unknown,
 	): Observable<QueryOutput> => {
 		const invoke = (retries: number) => {
@@ -69,7 +69,7 @@ export function query(
 				map(
 					(data): QueryOutput => {
 						return {
-							state: 'success',
+							status: 'success',
 							data,
 							...(retries ? { retries } : {}),
 						};
@@ -78,7 +78,7 @@ export function query(
 				catchError(
 					(error): Observable<QueryOutput> => {
 						return of({
-							state: 'error',
+							status: 'error',
 							error,
 							retries,
 						});
@@ -91,7 +91,7 @@ export function query(
 			invoke(0).pipe(
 				expand((result) => {
 					if (
-						result.state === 'error' &&
+						result.status === 'error' &&
 						retryCondition(result.retries || 0, result.error)
 					) {
 						return timer(retryDelay(result.retries || 0)).pipe(
@@ -100,7 +100,7 @@ export function query(
 							// for consumers we're still loading
 							startWith({
 								...result,
-								state: loadingState,
+								status: loadingStatus,
 							} as QueryOutput),
 						);
 					}
@@ -109,7 +109,7 @@ export function query(
 				}),
 				// prevents that there's multiple emits in the same tick
 				// for when the status is swapped from error to loading (to retry)
-				debounce((result) => (result.state === 'error' ? timer(0) : EMPTY)),
+				debounce((result) => (result.status === 'error' ? timer(0) : EMPTY)),
 			),
 		);
 
@@ -305,6 +305,6 @@ function queryKeyAndParamsToCacheKey(key: string, params: unknown) {
 }
 
 type QueryInvoker = (
-	state: string,
+	status: string,
 	params?: unknown,
 ) => Observable<QueryOutput<unknown>>;

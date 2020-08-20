@@ -4,6 +4,7 @@ import { map } from 'rxjs/operators';
 
 import { query } from '../../rx-query';
 import { QueryOutput } from '../../rx-query/types';
+import { Observable } from 'rxjs';
 
 @Component({
 	selector: 'example-multiple-subscribers',
@@ -21,7 +22,7 @@ import { QueryOutput } from '../../rx-query/types';
 					*ngIf="consumer$ | async as consumer"
 					(click)="removeConsumer(index)"
 				>
-					<div [ngSwitch]="consumer.state">
+					<div [ngSwitch]="consumer.status">
 						<div *ngSwitchDefault class="md:flex bg-white rounded-lg p-6">
 							<div class="text-center md:text-left">
 								<h2 class="text-lg text-blue-500">
@@ -50,16 +51,16 @@ import { QueryOutput } from '../../rx-query/types';
 	],
 })
 export class MultipleSubscribersComponent {
-	consumers: QueryOutput<unknown>[] = [];
+	consumers: Observable<QueryOutput<{ time: string }>>[] = [];
 
 	constructor(private http: HttpClient) {}
 
-	addConsumer() {
+	addConsumer(): void {
 		const q = query(
 			'example-multiple-subscribers',
 			() =>
-				this.http.get('/now').pipe(
-					map((utc: { timestamp: number }) => {
+				this.http.get<{ timestamp: number }>('/now').pipe(
+					map((utc) => {
 						return {
 							time: new Intl.DateTimeFormat('default', {
 								year: 'numeric',
@@ -69,7 +70,7 @@ export class MultipleSubscribersComponent {
 								minute: 'numeric',
 								second: 'numeric',
 								timeZoneName: 'short',
-							}).format(utc.now),
+							}).format(utc.timestamp),
 						};
 					}),
 				),
@@ -77,10 +78,11 @@ export class MultipleSubscribersComponent {
 				cacheTime: 5000,
 			},
 		);
+
 		this.consumers.push(q);
 	}
 
-	removeConsumer(index: number) {
+	removeConsumer(index: number): void {
 		this.consumers.splice(index, 1);
 	}
 }

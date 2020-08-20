@@ -11,7 +11,7 @@ import { query } from '../../rx-query';
 			class="max-w-sm rounded overflow-hidden shadow-lg"
 			*ngIf="repo$ | async as repo"
 		>
-			<div [ngSwitch]="repo.state">
+			<div [ngSwitch]="repo.status">
 				<div *ngSwitchDefault class="md:flex bg-white rounded-lg p-6">
 					<div class="text-center md:text-left">
 						<a class="text-lg text-blue-500" [href]="repo.data.url"
@@ -34,23 +34,23 @@ import { query } from '../../rx-query';
 })
 export class BasicComponent {
 	repo$ = query('example-basic', () =>
-		this.http.get('https://api.github.com/repos/timdeschryver/rx-query').pipe(
-			map(
-				(repo: {
-					name: string;
-					html_url: string;
-					owner: { login: string };
-					stargazers_count: number;
-				}) => {
+		this.http
+			.get<{
+				name: string;
+				html_url: string;
+				owner: { login: string };
+				stargazers_count: number;
+			}>('https://api.github.com/repos/timdeschryver/rx-query')
+			.pipe(
+				map((repo) => {
 					return {
 						name: repo.name,
 						url: repo.html_url,
 						owner: repo.owner.login,
 						stars: repo.stargazers_count,
 					};
-				},
+				}),
 			),
-		),
 	);
 
 	constructor(private http: HttpClient) {}

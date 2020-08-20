@@ -11,7 +11,7 @@ import { RickAndMortyService } from './rickandmorty.service';
 	template: `
 		<a routerLink="/">Home</a>
 		<ng-container *ngIf="character$ | async as character">
-			<ng-container [ngSwitch]="character.state">
+			<ng-container [ngSwitch]="character.status">
 				<div *ngSwitchCase="'loading'">
 					Loading ... ({{ character.retries }})
 				</div>

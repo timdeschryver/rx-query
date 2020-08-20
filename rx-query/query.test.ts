@@ -8,17 +8,17 @@ it('first loads then succeeds', async () => {
 	const values = [];
 	for await (const value of eachValueFrom(
 		query('test', () => of({ id: '3' })).pipe(
-			takeWhile((x) => x.state !== 'success', true),
+			takeWhile((x) => x.status !== 'success', true),
 		),
 	)) {
 		values.push(value);
 	}
 	expect(values).toEqual([
 		{
-			state: 'loading',
+			status: 'loading',
 		},
 		{
-			state: 'success',
+			status: 'success',
 			data: { id: '3' },
 		},
 	]);
@@ -28,7 +28,7 @@ it('retries then errors', async () => {
 	const values = [];
 	for await (const value of eachValueFrom(
 		query('test', () => throwError('Error')).pipe(
-			takeWhile((x) => x.state !== 'error', true),
+			takeWhile((x) => x.status !== 'error', true),
 		),
 	)) {
 		values.push(value);
@@ -36,17 +36,17 @@ it('retries then errors', async () => {
 
 	expect(values).toEqual([
 		{
-			state: 'loading',
+			status: 'loading',
 		},
 		...Array.from({ length: DEFAULT_QUERY_CONFIG.retries as number }).map(
 			(_, i) => ({
-				state: 'loading',
+				status: 'loading',
 				retries: i,
 				error: 'Error',
 			}),
 		),
 		{
-			state: 'error',
+			status: 'error',
 			retries: 3,
 			error: 'Error',
 		},
@@ -59,22 +59,22 @@ it('can override default error config with retries', async () => {
 		query('test', () => throwError('Error'), {
 			retries: 1,
 			retryDelay: 1,
-		}).pipe(takeWhile((x) => x.state !== 'error', true)),
+		}).pipe(takeWhile((x) => x.status !== 'error', true)),
 	)) {
 		values.push(value);
 	}
 
 	expect(values).toEqual([
 		{
-			state: 'loading',
+			status: 'loading',
 		},
 		{
-			state: 'loading',
+			status: 'loading',
 			retries: 0,
 			error: 'Error',
 		},
 		{
-			state: 'error',
+			status: 'error',
 			retries: 1,
 			error: 'Error',
 		},
@@ -90,22 +90,22 @@ it('can override default error config with custom retry', async () => {
 				return n < 5;
 			},
 			retryDelay: 1,
-		}).pipe(takeWhile((x) => x.state !== 'error', true)),
+		}).pipe(takeWhile((x) => x.status !== 'error', true)),
 	)) {
 		values.push(value);
 	}
 
 	expect(values).toEqual([
 		{
-			state: 'loading',
+			status: 'loading',
 		},
 		...Array.from({ length: 5 }).map((_, i) => ({
-			state: 'loading',
+			status: 'loading',
 			retries: i,
 			error: 'Error',
 		})),
 		{
-			state: 'error',
+			status: 'error',
 			retries: 5,
 			error: 'Error',
 		},
@@ -129,7 +129,7 @@ it('retrieves data when params change and caches previous results', async () => 
 			(bool) => of(bool),
 		).pipe(
 			takeWhile((x) => {
-				success += x.state === 'success' ? 1 : 0;
+				success += x.status === 'success' ? 1 : 0;
 				return success !== 3;
 			}, true),
 		),
@@ -139,14 +139,14 @@ it('retrieves data when params change and caches previous results', async () => 
 
 	expect(values).toEqual([
 		// true is already in cache, so it refreshes
-		{ state: 'refreshing', data: true },
-		{ state: 'success', data: true },
-		{ state: 'loading' },
-		{ state: 'success', data: false },
+		{ status: 'refreshing', data: true },
+		{ status: 'success', data: true },
+		{ status: 'loading' },
+		{ status: 'success', data: false },
 
 		// true again -> refresh the cache
-		{ state: 'refreshing', data: true },
-		{ state: 'success', data: true },
+		{ status: 'refreshing', data: true },
+		{ status: 'success', data: true },
 	]);
 
 	sub.unsubscribe();
@@ -169,7 +169,7 @@ it('groups cache continues to live until cacheTime resolves', async () => {
 			},
 		).pipe(
 			takeWhile((x) => {
-				success += x.state === 'success' ? 1 : 0;
+				success += x.status === 'success' ? 1 : 0;
 				return success !== 3;
 			}, true),
 		),
@@ -178,14 +178,14 @@ it('groups cache continues to live until cacheTime resolves', async () => {
 	}
 
 	expect(values).toEqual([
-		{ state: 'loading' },
-		{ state: 'success', data: true },
-		{ state: 'loading' },
-		{ state: 'success', data: false },
+		{ status: 'loading' },
+		{ status: 'success', data: true },
+		{ status: 'loading' },
+		{ status: 'success', data: false },
 
 		// true was already cached and while being unsubscribed to, the cache remains
-		{ state: 'refreshing', data: true },
-		{ state: 'success', data: true },
+		{ status: 'refreshing', data: true },
+		{ status: 'success', data: true },
 	]);
 });
 
@@ -206,7 +206,7 @@ it('groups clean up after last unsubscribe', async () => {
 			},
 		).pipe(
 			takeWhile((x) => {
-				success += x.state === 'success' ? 1 : 0;
+				success += x.status === 'success' ? 1 : 0;
 				return success !== 3;
 			}, true),
 		),
@@ -215,14 +215,14 @@ it('groups clean up after last unsubscribe', async () => {
 	}
 
 	expect(values).toEqual([
-		{ state: 'loading' },
-		{ state: 'success', data: true },
-		{ state: 'loading' },
-		{ state: 'success', data: false },
+		{ status: 'loading' },
+		{ status: 'success', data: true },
+		{ status: 'loading' },
+		{ status: 'success', data: false },
 
 		// true was unsubscribed too, so it loses its cache
-		{ state: 'loading' },
-		{ state: 'success', data: true },
+		{ status: 'loading' },
+		{ status: 'success', data: true },
 	]);
 });
 
@@ -243,10 +243,10 @@ it('ignores following params with same key', async () => {
 	}
 
 	expect(values).toEqual([
-		{ state: 'loading' },
-		{ state: 'success', data: 'same' },
-		{ state: 'loading' },
-		{ state: 'success', data: 'other' },
+		{ status: 'loading' },
+		{ status: 'success', data: 'same' },
+		{ status: 'loading' },
+		{ status: 'success', data: 'other' },
 	]);
 });
 
@@ -266,7 +266,7 @@ it('can disable cache', async () => {
 			},
 		).pipe(
 			takeWhile((x) => {
-				success += x.state === 'success' ? 1 : 0;
+				success += x.status === 'success' ? 1 : 0;
 				return success !== 3;
 			}, true),
 		),
@@ -275,14 +275,14 @@ it('can disable cache', async () => {
 	}
 
 	expect(values).toEqual([
-		{ state: 'loading' },
-		{ state: 'success', data: true },
-		{ state: 'loading' },
-		{ state: 'success', data: false },
+		{ status: 'loading' },
+		{ status: 'success', data: true },
+		{ status: 'loading' },
+		{ status: 'success', data: false },
 
 		// no cache -> data is undefined
-		{ state: 'loading' },
-		{ state: 'success', data: true },
+		{ status: 'loading' },
+		{ status: 'success', data: true },
 	]);
 });
 
@@ -300,42 +300,42 @@ it('invokes query on refresh', async () => {
 
 	expect(values).toEqual([
 		{
-			state: 'loading',
+			status: 'loading',
 		},
 		{
-			state: 'success',
+			status: 'success',
 			data: 20,
 		},
 		{
-			state: 'refreshing',
+			status: 'refreshing',
 			data: 20,
 		},
 		{
-			state: 'success',
+			status: 'success',
 			data: 21,
 		},
 		{
-			state: 'refreshing',
+			status: 'refreshing',
 			data: 21,
 		},
 		{
-			state: 'success',
+			status: 'success',
 			data: 22,
 		},
 		{
-			state: 'refreshing',
+			status: 'refreshing',
 			data: 22,
 		},
 		{
-			state: 'success',
+			status: 'success',
 			data: 23,
 		},
 		{
-			state: 'refreshing',
+			status: 'refreshing',
 			data: 23,
 		},
 		{
-			state: 'success',
+			status: 'success',
 			data: 24,
 		},
 	]);
@@ -359,19 +359,19 @@ it('invokes query on focus', async () => {
 
 	expect(values).toEqual([
 		{
-			state: 'loading',
+			status: 'loading',
 		},
 		{
-			state: 'success',
+			status: 'success',
 			data: 20,
 		},
 		// refetch because window is focused
 		{
-			state: 'refreshing',
+			status: 'refreshing',
 			data: 20,
 		},
 		{
-			state: 'success',
+			status: 'success',
 			data: 21,
 		},
 	]);
@@ -396,7 +396,7 @@ it('can disable refresh on data when data is still fresh', async () => {
 			(bool) => of(bool),
 		).pipe(
 			takeWhile((x) => {
-				success += x.state === 'success' ? 1 : 0;
+				success += x.status === 'success' ? 1 : 0;
 				return success !== 2;
 			}, true),
 		),
@@ -406,9 +406,9 @@ it('can disable refresh on data when data is still fresh', async () => {
 
 	expect(values).toEqual([
 		// doesn't fire a load, nor a refresh
-		{ state: 'success', data: true },
-		{ state: 'loading' },
-		{ state: 'success', data: false },
+		{ status: 'success', data: true },
+		{ status: 'loading' },
+		{ status: 'success', data: false },
 	]);
 
 	sub.unsubscribe();

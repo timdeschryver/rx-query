@@ -1,7 +1,7 @@
 import { Observable } from 'rxjs';
 
 export type QueryOutput<QueryResult = unknown> = {
-	state: 'idle' | 'success' | 'error' | 'loading' | 'refreshing';
+	status: 'idle' | 'success' | 'error' | 'loading' | 'refreshing';
 	data?: QueryResult;
 	error?: unknown;
 	retries?: number;
@@ -28,7 +28,7 @@ export type Revalidator<QueryResult = unknown, QueryParam = unknown> = {
 		| 'group-remove'; // remove the group after x ms after unsubscribe
 	params: QueryParam;
 	query: (
-		state: string,
+		status: string,
 		params?: QueryParam,
 	) => Observable<QueryOutput<QueryResult>>;
 	config: Required<QueryConfig>;

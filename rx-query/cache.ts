@@ -115,15 +115,15 @@ export const cache = revalidate.pipe(
 
 					if (revalidator.trigger === 'group-unsubscribe') {
 						if (
-							groupState.result.state === 'loading' ||
-							groupState.result.state === 'refreshing'
+							groupState.result.status === 'loading' ||
+							groupState.result.status === 'refreshing'
 						) {
 							return of({
 								groupState: {
 									...groupState,
 									result: {
 										...groupState.result,
-										state: 'success' as QueryOutput['state'],
+										status: 'success' as QueryOutput['status'],
 									},
 									subscriptions,
 								},
@@ -145,7 +145,7 @@ export const cache = revalidate.pipe(
 					// when the query resolves
 					if (
 						groupState.result &&
-						['loading', 'refreshing'].includes(groupState.result.state)
+						['loading', 'refreshing'].includes(groupState.result.status)
 					) {
 						return of({
 							groupState: { ...groupState, subscriptions },
@@ -163,7 +163,7 @@ export const cache = revalidate.pipe(
 							...groupState,
 							subscriptions,
 							result: {
-								state: 'success',
+								status: 'success',
 								data: groupState.result?.data,
 							},
 						};
@@ -191,11 +191,11 @@ export const cache = revalidate.pipe(
 										key: revalidator.key,
 										result: queryResult,
 										staleAt:
-											queryResult.state === 'success'
+											queryResult.status === 'success'
 												? now + revalidator.config.staleTime
 												: undefined,
 										removeCacheAt:
-											queryResult.state === 'success'
+											queryResult.status === 'success'
 												? now + revalidator.config.cacheTime
 												: undefined,
 										// ignore subscriptions, query could already be unsubscribed and this will re-create a subscription because this subscription is outdate
@@ -208,7 +208,7 @@ export const cache = revalidate.pipe(
 					const initial: GroupState = {
 						key: revalidator.key,
 						result: {
-							state: intialState,
+							status: intialState,
 							...(hasCache ? { data: groupState.result?.data } : {}),
 						},
 						staleAt: groupState.staleAt,
@@ -231,7 +231,7 @@ export const cache = revalidate.pipe(
 						staleAt: undefined,
 						subscriptions: 0,
 						result: {
-							state: 'idle',
+							status: 'idle',
 						},
 					} as GroupState,
 					trigger: 'unknown' as Revalidator['trigger'],

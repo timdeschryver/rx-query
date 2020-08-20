@@ -11,7 +11,7 @@ import { Subject } from 'rxjs';
 		<div class="w-full">
 			<div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
 				<ng-container *ngIf="persons$ | async as persons">
-					<div [ngSwitch]="persons.state" class="flex">
+					<div [ngSwitch]="persons.status" class="flex">
 						<ng-container *ngSwitchDefault>
 							<div
 								*ngFor="let person of persons.data"
@@ -35,7 +35,7 @@ import { Subject } from 'rxjs';
 				</ng-container>
 
 				<ng-container *ngIf="selectedPerson$ | async as selected">
-					<div [ngSwitch]="selected.state" class="bg-blue-200 p-4">
+					<div [ngSwitch]="selected.status" class="bg-blue-200 p-4">
 						<div *ngSwitchDefault class="text-lg">
 							<div class="text-blue-500">
 								{{ selected.data.name }} ({{ selected.data.id }})

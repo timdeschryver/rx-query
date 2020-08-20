@@ -10,7 +10,7 @@ import { RickAndMortyService } from './rickandmorty.service';
 	selector: 'app-root',
 	template: `
 		<ng-container *ngIf="characters$ | async as characters">
-			<ng-container [ngSwitch]="characters.state">
+			<ng-container [ngSwitch]="characters.status">
 				<div *ngSwitchCase="'loading'">
 					Loading ... ({{ characters.retries }})
 				</div>

@@ -55,20 +55,20 @@ character$ = query(
 );
 ```
 
-### Query states
+### Query status
 
-A query can have 4 states:
+A query can have 4 statuses:
 
 - `loading`: when the query is being invoked and hasn't responded yet
 - `refreshing`: when the query is being invoked, and there's a cached value (the cached value gets refreshed when the query is successful)
 - `success`: when the query returns a successful response
 - `error`: when the query threw an error
 
-In the view layer you will often see a structure like this, with a segment to represent each state:
+In the view layer you will often see a structure like this, with a segment to represent each status:
 
 ```html
 <ng-container *ngIf="characters$ | async as characters">
-	<ng-container [ngSwitch]="characters.state">
+	<ng-container [ngSwitch]="characters.status">
 		<div *ngSwitchCase="'loading'">
 			Loading ... ({{ characters.retries }})
 		</div>
@@ -93,16 +93,16 @@ In the view layer you will often see a structure like this, with a segment to re
 ```ts
 export type QueryStatus = "loading" | "refreshing" | "success" | "error";
 export type QueryOutput<R> = {
-	state: QueryStatus;
+	status: QueryStatus;
 	data?: R;
 	error?: unknown;
 	retries: number;
 };
 ```
 
-### `state`
+### `status`
 
-The current state of the query.
+The current status of the query.
 
 ### `data`
 
@@ -111,13 +111,13 @@ The result of the query, or the cached result.
 ### `error`
 
 The error object returned by the query.
-Only available in the error state.
+Only available in the error status.
 
 ### `retries`
 
 Number of query retries.
 Is reset every time data is fetched.
-Available on all states.
+Available on all statuses.
 
 ## Config
 
@@ -134,9 +134,9 @@ export type QueryConfig = {
 
 ### `retries`
 
-The number of retries to retry a query before ending up in the error state.
+The number of retries to retry a query before ending up in the error status.
 Also accepts a callback method `((retryAttempt: number, error: unknown) => boolean)` to give more control to the consumer.
-When a query is being retried, the state remains in the original (loading or refreshing) state.
+When a query is being retried, the status remains in the original (loading or refreshing) status.
 
 Default: `3`
 

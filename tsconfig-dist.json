@@ -4,6 +4,6 @@
 		"sourceMap": true
 	},
 	"include": ["rx-query/**/*.ts"],
-	"exclude": ["rx-query/**/*.spec.ts"],
+	"exclude": ["rx-query/**/*.test.ts"],
 	"extends": "./tsconfig.base.json"
 }
