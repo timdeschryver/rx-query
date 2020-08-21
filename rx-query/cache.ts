@@ -114,30 +114,22 @@ export const cache = revalidate.pipe(
 					}
 
 					if (revalidator.trigger === 'group-unsubscribe') {
-						if (
-							groupState.result.status === 'loading' ||
-							groupState.result.status === 'refreshing'
-						) {
-							return of({
-								groupState: {
-									...groupState,
-									result: {
-										...groupState.result,
-										status: 'success' as QueryOutput['status'],
-									},
-									subscriptions,
+						return of({
+							groupState: {
+								...groupState,
+								result: {
+									...groupState.result,
+									// reset status to allow a resubscribe
+									status: ['loading', 'refreshing'].includes(
+										groupState.result.status,
+									)
+										? ('idle' as QueryOutput['status'])
+										: groupState.result.status,
 								},
-								trigger: revalidator.trigger,
-							});
-						} else {
-							return of({
-								groupState: {
-									...groupState,
-									subscriptions,
-								},
-								trigger: revalidator.trigger,
-							});
-						}
+								subscriptions,
+							},
+							trigger: revalidator.trigger,
+						});
 					}
 
 					// we're already revalidating the cache

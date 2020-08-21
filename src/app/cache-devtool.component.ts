@@ -99,6 +99,7 @@ export class RxQueryDevToolComponent {
 					status: value.state.result.status,
 					staleAt: value.state.staleAt,
 					removeCacheAt: value.state.removeCacheAt,
+					trigger: value.trigger,
 				};
 			});
 		}),
