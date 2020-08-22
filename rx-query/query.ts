@@ -29,6 +29,7 @@ import {
 	shareReplay,
 } from 'rxjs/operators';
 import { revalidate, cache } from './cache';
+import { mutate, mutateError, mutateOptimistic } from './mutate';
 import { QueryOutput, QueryConfig, Revalidator } from './types';
 
 export const DEFAULT_QUERY_CONFIG: Required<QueryConfig> = {
@@ -38,24 +39,25 @@ export const DEFAULT_QUERY_CONFIG: Required<QueryConfig> = {
 	refetchInterval: Number.MAX_VALUE,
 	staleTime: 0,
 	cacheTime: 30_0000, // 5 minutes
+	mutator: (data) => data,
 };
 
-export function query<QueryParam, QueryResult>(
+export function query<QueryResult, QueryParam>(
 	key: string,
 	query: (params: QueryParam) => Observable<QueryResult>,
-	config?: QueryConfig,
+	config?: QueryConfig<QueryResult, QueryParam>,
 ): Observable<QueryOutput<QueryResult>>;
-export function query<QueryParam, QueryResult>(
+export function query<QueryResult, QueryParam>(
 	key: string,
 	observableOrStaticParam: QueryParam | Observable<QueryParam>,
 	query: (params: QueryParam) => Observable<QueryResult>,
-	config?: QueryConfig,
+	config?: QueryConfig<QueryResult, QueryParam>,
 ): Observable<QueryOutput<QueryResult>>;
 
 export function query(
 	key: string,
 	...inputs: unknown[]
-): Observable<QueryOutput<unknown>> {
+): Observable<QueryOutput> {
 	const { query, queryParam, queryConfig } = parseInput(inputs);
 	const retryCondition = createRetryCondition(queryConfig);
 	const retryDelay = createRetryDelay(queryConfig);
@@ -67,16 +69,16 @@ export function query(
 		const invoke = (retries: number) => {
 			return query(params).pipe(
 				map(
-					(data): QueryOutput => {
+					(data): Omit<QueryOutput, 'mutate'> => {
 						return {
 							status: 'success',
-							data,
+							data: data as Readonly<unknown>,
 							...(retries ? { retries } : {}),
 						};
 					},
 				),
 				catchError(
-					(error): Observable<QueryOutput> => {
+					(error): Observable<Omit<QueryOutput, 'mutate'>> => {
 						return of({
 							status: 'error',
 							error,
@@ -87,6 +89,25 @@ export function query(
 			);
 		};
 
+		const mutateQuery = (data: unknown) => {
+			const mutate$ = queryConfig.mutator(data, params);
+			const cacheKey = queryKeyAndParamsToCacheKey(key, params);
+			if (isObservable(mutate$)) {
+				mutate$
+					.pipe(
+						map((newData) => () => mutate(cacheKey, newData)),
+						take(1),
+						startWith(() => mutateOptimistic(cacheKey, data)),
+					)
+					.subscribe({
+						next: (evt) => evt(),
+						error: (errorData) => mutateError(cacheKey, errorData),
+					});
+				return;
+			}
+
+			mutate(cacheKey, mutate$);
+		};
 		const callResult$: Observable<QueryOutput> = defer(() =>
 			invoke(0).pipe(
 				expand((result) => {
@@ -96,6 +117,7 @@ export function query(
 					) {
 						return timer(retryDelay(result.retries || 0)).pipe(
 							concatMap(() => invoke((result.retries || 0) + 1)),
+
 							// retry internally
 							// for consumers we're still loading
 							startWith({
@@ -110,6 +132,12 @@ export function query(
 				// prevents that there's multiple emits in the same tick
 				// for when the status is swapped from error to loading (to retry)
 				debounce((result) => (result.status === 'error' ? timer(0) : EMPTY)),
+				map((r) => {
+					return {
+						...r,
+						mutate: mutateQuery,
+					};
+				}),
 			),
 		);
 
@@ -307,4 +335,4 @@ function queryKeyAndParamsToCacheKey(key: string, params: unknown) {
 type QueryInvoker = (
 	status: string,
 	params?: unknown,
-) => Observable<QueryOutput<unknown>>;
+) => Observable<QueryOutput>;

@@ -1,6 +1,6 @@
 {
 	"name": "rx-query",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"description": "rx-query",
 	"author": "Tim Deschryver",
 	"repository": {
@@ -92,7 +92,7 @@
 		"jest": "^26.1.0",
 		"jest-preset-angular": "^8.2.1",
 		"lint-staged": "^10.2.11",
-		"msw": "^0.20.3",
+		"msw": "^0.20.5",
 		"node-request-interceptor": "0.3.1",
 		"prettier": "^2.0.5",
 		"rimraf": "^3.0.2",

@@ -3,6 +3,8 @@ import { take, takeWhile, map } from 'rxjs/operators';
 import { eachValueFrom } from 'rxjs-for-await';
 import { fireEvent } from '@testing-library/dom';
 import { query, DEFAULT_QUERY_CONFIG } from '.';
+import { revalidate } from './cache';
+import { QueryOutput, Revalidator } from './types';
 
 it('first loads then succeeds', async () => {
 	const values = [];
@@ -13,7 +15,7 @@ it('first loads then succeeds', async () => {
 	)) {
 		values.push(value);
 	}
-	expect(values).toEqual([
+	expect(valuesWithoutMutate(values)).toEqual([
 		{
 			status: 'loading',
 		},
@@ -25,7 +27,7 @@ it('first loads then succeeds', async () => {
 });
 
 it('retries then errors', async () => {
-	const values = [];
+	const values: any[] = [];
 	for await (const value of eachValueFrom(
 		query('test', () => throwError('Error')).pipe(
 			takeWhile((x) => x.status !== 'error', true),
@@ -34,7 +36,7 @@ it('retries then errors', async () => {
 		values.push(value);
 	}
 
-	expect(values).toEqual([
+	expect(valuesWithoutMutate(values)).toEqual([
 		{
 			status: 'loading',
 		},
@@ -54,7 +56,7 @@ it('retries then errors', async () => {
 }, 7000);
 
 it('can override default error config with retries', async () => {
-	const values = [];
+	const values: any[] = [];
 	for await (const value of eachValueFrom(
 		query('test', () => throwError('Error'), {
 			retries: 1,
@@ -64,7 +66,7 @@ it('can override default error config with retries', async () => {
 		values.push(value);
 	}
 
-	expect(values).toEqual([
+	expect(valuesWithoutMutate(values)).toEqual([
 		{
 			status: 'loading',
 		},
@@ -82,7 +84,7 @@ it('can override default error config with retries', async () => {
 });
 
 it('can override default error config with custom retry', async () => {
-	const values = [];
+	const values: any[] = [];
 	for await (const value of eachValueFrom(
 		query('test', () => throwError('Error'), {
 			retries: (n, error) => {
@@ -95,7 +97,7 @@ it('can override default error config with custom retry', async () => {
 		values.push(value);
 	}
 
-	expect(values).toEqual([
+	expect(valuesWithoutMutate(values)).toEqual([
 		{
 			status: 'loading',
 		},
@@ -137,7 +139,7 @@ it('retrieves data when params change and caches previous results', async () => 
 		values.push(value);
 	}
 
-	expect(values).toEqual([
+	expect(valuesWithoutMutate(values)).toEqual([
 		// true is already in cache, so it refreshes
 		{ status: 'refreshing', data: true },
 		{ status: 'success', data: true },
@@ -177,7 +179,7 @@ it('groups cache continues to live until cacheTime resolves', async () => {
 		values.push(value);
 	}
 
-	expect(values).toEqual([
+	expect(valuesWithoutMutate(values)).toEqual([
 		{ status: 'loading' },
 		{ status: 'success', data: true },
 		{ status: 'loading' },
@@ -214,7 +216,7 @@ it('groups clean up after last unsubscribe', async () => {
 		values.push(value);
 	}
 
-	expect(values).toEqual([
+	expect(valuesWithoutMutate(values)).toEqual([
 		{ status: 'loading' },
 		{ status: 'success', data: true },
 		{ status: 'loading' },
@@ -242,7 +244,7 @@ it('ignores following params with same key', async () => {
 		values.push(value);
 	}
 
-	expect(values).toEqual([
+	expect(valuesWithoutMutate(values)).toEqual([
 		{ status: 'loading' },
 		{ status: 'success', data: 'same' },
 		{ status: 'loading' },
@@ -274,7 +276,7 @@ it('can disable cache', async () => {
 		values.push(value);
 	}
 
-	expect(values).toEqual([
+	expect(valuesWithoutMutate(values)).toEqual([
 		{ status: 'loading' },
 		{ status: 'success', data: true },
 		{ status: 'loading' },
@@ -298,7 +300,7 @@ it('invokes query on refresh', async () => {
 		values.push(value);
 	}
 
-	expect(values).toEqual([
+	expect(valuesWithoutMutate(values)).toEqual([
 		{
 			status: 'loading',
 		},
@@ -357,7 +359,7 @@ it('invokes query on focus', async () => {
 		values.push(value);
 	}
 
-	expect(values).toEqual([
+	expect(valuesWithoutMutate(values)).toEqual([
 		{
 			status: 'loading',
 		},
@@ -404,7 +406,7 @@ it('can disable refresh on data when data is still fresh', async () => {
 		values.push(value);
 	}
 
-	expect(values).toEqual([
+	expect(valuesWithoutMutate(values)).toEqual([
 		// doesn't fire a load, nor a refresh
 		{ status: 'success', data: true },
 		{ status: 'loading' },
@@ -413,3 +415,102 @@ it('can disable refresh on data when data is still fresh', async () => {
 
 	sub.unsubscribe();
 });
+
+it('can mutate data (allows partial)', async () => {
+	const values = [];
+	setTimeout(() => {
+		revalidate.next({
+			key: 'test',
+			data: { name: 'updated' },
+			trigger: 'mutate-success',
+			config: DEFAULT_QUERY_CONFIG,
+		});
+	}, 10);
+	for await (const value of eachValueFrom(
+		query('test', () =>
+			of({ name: 'initial', description: 'just a description' }),
+		).pipe(
+			takeWhile((x) => {
+				return x.data?.name !== 'updated';
+			}, true),
+		),
+	)) {
+		values.push(value);
+	}
+
+	expect(valuesWithoutMutate(values)).toEqual([
+		{ status: 'loading' },
+		{
+			status: 'success',
+			data: { name: 'initial', description: 'just a description' },
+		},
+		{
+			status: 'success',
+			data: { name: 'updated', description: 'just a description' },
+		},
+	]);
+});
+
+it('rollbacks when a mutation errors', async () => {
+	const values = [];
+	const events: Revalidator[] = [
+		{
+			key: 'test',
+			data: 'new value',
+			trigger: 'mutate-optimistic',
+			config: DEFAULT_QUERY_CONFIG,
+		},
+		// 👇 gets ignore because we're in `mutating` state
+		{
+			key: 'test',
+			trigger: 'interval',
+			config: DEFAULT_QUERY_CONFIG,
+		},
+		// 👇 gets ignore because we're in `mutating` state
+		{
+			key: 'test',
+			data: 'new value 2',
+			trigger: 'mutate-optimistic',
+			config: DEFAULT_QUERY_CONFIG,
+		},
+		{
+			key: 'test',
+			data: 'this is the error',
+			trigger: 'mutate-error',
+			config: DEFAULT_QUERY_CONFIG,
+		},
+	];
+	let i = 0;
+	const interval = setInterval(() => {
+		const evt = events[i++];
+		if (evt) {
+			revalidate.next(evt);
+		} else {
+			clearInterval(interval);
+		}
+	}, 10);
+
+	for await (const value of eachValueFrom(
+		query('test', () => of('initial')).pipe(
+			takeWhile((x) => {
+				return x.error !== 'this is the error';
+			}, true),
+		),
+	)) {
+		values.push(value);
+	}
+
+	expect(valuesWithoutMutate(values)).toEqual([
+		{ status: 'loading' },
+		{ status: 'success', data: 'initial' },
+		{ status: 'mutating', data: 'new value' },
+		{ status: 'mutate-error', data: 'initial', error: 'this is the error' },
+	]);
+});
+
+function valuesWithoutMutate(values: QueryOutput<any>[]) {
+	return values.map((v) => {
+		const { mutate: _, ...value } = v;
+		return value;
+	});
+}

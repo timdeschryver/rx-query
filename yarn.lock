@@ -9421,10 +9421,10 @@ ms@^2.0.0, ms@^2.1.1:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.2.tgz#d09d1f357b443f493382a8eb3ccd183872ae6009"
   integrity sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==
 
-msw@^0.20.3:
-  version "0.20.3"
-  resolved "https://registry.yarnpkg.com/msw/-/msw-0.20.3.tgz#aaafef3775ae2ba35e6ca45590033f9a1f692efe"
-  integrity sha512-UgxuuWWIawGpexjTAOWCNMc/aJy+F+0NsWsj14PM3/gmFbkKNvARgUTIc2dFFx9rYlZWW++GqYARR4sV7bHeEg==
+msw@^0.20.5:
+  version "0.20.5"
+  resolved "https://registry.yarnpkg.com/msw/-/msw-0.20.5.tgz#b6141080c0d8b17c451d9ca36c28cc47b4ac487a"
+  integrity sha512-hmEsey5BbVicMGt7aOh/GZ9ltga5N3tK6NiJXnbfCkAGKgnAVnjASr3i7Z+sWlZyY5uuMUFyLCEcqrlXxC6qIA==
   dependencies:
     "@open-draft/until" "^1.0.3"
     "@types/cookie" "^0.4.0"
@@ -9434,7 +9434,7 @@ msw@^0.20.3:
     headers-utils "^1.2.0"
     node-fetch "^2.6.0"
     node-match-path "^0.4.4"
-    node-request-interceptor "^0.3.3"
+    node-request-interceptor "^0.3.5"
     statuses "^2.0.0"
     yargs "^15.4.1"
 
@@ -9615,10 +9615,10 @@ node-request-interceptor@0.3.1:
     debug "^4.1.1"
     headers-utils "^1.2.0"
 
-node-request-interceptor@^0.3.3:
-  version "0.3.3"
-  resolved "https://registry.yarnpkg.com/node-request-interceptor/-/node-request-interceptor-0.3.3.tgz#4227763d1d8d696fc15f7d6e1fe0ed1dd8c9d86d"
-  integrity sha512-NLFD4F7sB72WSVI7YYQzaRa7PkhdbXL1cPNvu2LlGkmnLbE11EEKrRmie5gDOKy3xfk22xXPk654CbiFwaBLdA==
+node-request-interceptor@^0.3.5:
+  version "0.3.6"
+  resolved "https://registry.yarnpkg.com/node-request-interceptor/-/node-request-interceptor-0.3.6.tgz#c411065a424b17a17503ecfce11a6a2a2f5d9a87"
+  integrity sha512-pN8Tt43XuLamN+bspAZ9tEMGDp1bOfaxluYop1/qmNRQmM5BOelFqr4jRvARD6y/7iuhLjOEjMQgy5HweXN7Kg==
   dependencies:
     "@open-draft/until" "^1.0.3"
     debug "^4.1.1"

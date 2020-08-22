@@ -113,6 +113,17 @@ export const cache = revalidate.pipe(
 						});
 					}
 
+					// ignore new queries when mutating
+					if (
+						groupState.result.status === 'mutating' &&
+						!['mutate-success', 'mutate-error'].includes(revalidator.trigger)
+					) {
+						return of({
+							groupState,
+							trigger: revalidator.trigger,
+						});
+					}
+
 					if (revalidator.trigger === 'group-unsubscribe') {
 						return of({
 							groupState: {
@@ -127,6 +138,87 @@ export const cache = revalidate.pipe(
 										: groupState.result.status,
 								},
 								subscriptions,
+							},
+							trigger: revalidator.trigger,
+						});
+					}
+
+					if (revalidator.trigger === 'mutate-success') {
+						if (!revalidator.data) {
+							console.warn(`[rx-query] Revalidator should have data`, {
+								key: revalidator.key,
+								trigger: revalidator.trigger,
+							});
+						}
+
+						const newResult: QueryOutput = {
+							...groupState.result,
+							data: (typeof revalidator.data === 'object'
+								? {
+										...groupState.result.data,
+										...revalidator.data,
+								  }
+								: revalidator.data) as Readonly<unknown>,
+							status: 'success',
+						};
+
+						return of({
+							groupState: {
+								...groupState,
+								result: newResult,
+								originalResultData: undefined,
+							},
+							trigger: revalidator.trigger,
+						});
+					}
+
+					if (revalidator.trigger === 'mutate-error') {
+						if (!revalidator.data) {
+							console.warn(`[rx-query] Revalidator should have data`, {
+								key: revalidator.key,
+								trigger: revalidator.trigger,
+							});
+						}
+
+						const newResult: QueryOutput = {
+							...groupState.result,
+							data: groupState.originalResultData as Readonly<unknown>,
+							error: revalidator.data as Readonly<unknown>,
+							status: 'mutate-error',
+						};
+
+						return of({
+							groupState: {
+								...groupState,
+								result: newResult,
+							},
+							trigger: revalidator.trigger,
+						});
+					}
+
+					if (revalidator.trigger === 'mutate-optimistic') {
+						if (!revalidator.data) {
+							console.warn(`[rx-query] Revalidator should have data`, {
+								key: revalidator.key,
+								trigger: revalidator.trigger,
+							});
+						}
+
+						const newResult: QueryOutput = {
+							...groupState.result,
+							data: (typeof revalidator.data === 'object'
+								? {
+										...groupState.result.data,
+										...revalidator.data,
+								  }
+								: revalidator.data) as Readonly<unknown>,
+							status: 'mutating',
+						};
+						return of({
+							groupState: {
+								...groupState,
+								result: newResult,
+								originalResultData: groupState.result.data,
 							},
 							trigger: revalidator.trigger,
 						});
@@ -155,8 +247,8 @@ export const cache = revalidate.pipe(
 							...groupState,
 							subscriptions,
 							result: {
+								...groupState.result,
 								status: 'success',
-								data: groupState.result?.data,
 							},
 						};
 
@@ -168,6 +260,14 @@ export const cache = revalidate.pipe(
 
 					const hasCache = !!groupState.staleAt;
 					const intialState = hasCache ? 'refreshing' : 'loading';
+
+					if (!revalidator.query) {
+						console.warn(`[rx-query] Revalidator should have a query`, {
+							key: revalidator.key,
+							trigger: revalidator.trigger,
+						});
+						return of({ groupState, trigger: revalidator.trigger });
+					}
 
 					// invoke the query, set the initial query state
 					const invoker = revalidator
@@ -190,6 +290,7 @@ export const cache = revalidate.pipe(
 											queryResult.status === 'success'
 												? now + revalidator.config.cacheTime
 												: undefined,
+										originalResultData: undefined,
 										// ignore subscriptions, query could already be unsubscribed and this will re-create a subscription because this subscription is outdate
 										subscriptions: undefined,
 									};
@@ -201,7 +302,8 @@ export const cache = revalidate.pipe(
 						key: revalidator.key,
 						result: {
 							status: intialState,
-							...(hasCache ? { data: groupState.result?.data } : {}),
+							...(hasCache ? { data: groupState.result.data } : {}),
+							mutate: groupState.result.mutate,
 						},
 						staleAt: groupState.staleAt,
 						subscriptions,
@@ -224,7 +326,7 @@ export const cache = revalidate.pipe(
 						subscriptions: 0,
 						result: {
 							status: 'idle',
-						},
+						} as QueryOutput,
 					} as GroupState,
 					trigger: 'unknown' as Revalidator['trigger'],
 				},
@@ -278,6 +380,7 @@ type GroupSubscription = {
 
 type GroupState = {
 	key: string;
+	originalResultData?: unknown;
 	result: QueryOutput;
 	staleAt?: number;
 	removeCacheAt?: number;

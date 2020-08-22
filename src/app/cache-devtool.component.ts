@@ -85,6 +85,14 @@ import { cache, revalidate } from '../../rx-query';
 			.subscriptions[data-state='refreshing'] {
 				background: lightseagreen;
 			}
+
+			.subscriptions[data-state='mutating'] {
+				background: blueviolet;
+			}
+
+			.subscriptions[data-state='mutate-error'] {
+				background: firebrick;
+			}
 		`,
 	],
 })
@@ -99,6 +107,7 @@ export class RxQueryDevToolComponent {
 					status: value.state.result.status,
 					staleAt: value.state.staleAt,
 					removeCacheAt: value.state.removeCacheAt,
+					error: value.state.result.error,
 					trigger: value.trigger,
 				};
 			});

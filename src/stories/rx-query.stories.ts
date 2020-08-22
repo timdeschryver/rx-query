@@ -10,6 +10,7 @@ import { RefreshOnIntervalComponent } from '../examples/refresh-on-interval.comp
 import { ErrorComponent } from '../examples/error.component';
 import { TypeAheadComponent } from '../examples/typeahead.component';
 import { PrefetchComponent } from '../examples/prefetch.component';
+import { MutateComponent } from '../examples/mutate.component';
 
 export default {
 	title: 'rx-query',
@@ -69,11 +70,18 @@ TypeAhead.story = {
 	name: 'Typeahead',
 };
 
-
 export const Prefetch = () => ({
 	component: PrefetchComponent,
 });
 
 Prefetch.story = {
 	name: 'Prefetch',
+};
+
+export const Mutate = () => ({
+	component: MutateComponent,
+});
+
+Mutate.story = {
+	name: 'Mutate',
 };

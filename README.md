@@ -1,7 +1,5 @@
 # rx-query
 
-Check out the example on [StackBlitz](https://stackblitz.com/github/timdeschryver/rx-query).
-
 ## Why
 
 The User Interface of a page resembles the current state an application is in.
@@ -57,12 +55,14 @@ character$ = query(
 
 ### Query status
 
-A query can have 4 statuses:
+A query can have the following:
 
 - `loading`: when the query is being invoked and hasn't responded yet
 - `refreshing`: when the query is being invoked, and there's a cached value (the cached value gets refreshed when the query is successful)
 - `success`: when the query returns a successful response
 - `error`: when the query threw an error
+- `mutating`: when a [mutation](#mutate) is in progress
+- `mutate-error`: when a [mutation](#mutate) threw an error
 
 In the view layer you will often see a structure like this, with a segment to represent each status:
 
@@ -91,12 +91,20 @@ In the view layer you will often see a structure like this, with a segment to re
 ## Output
 
 ```ts
-export type QueryStatus = "loading" | "refreshing" | "success" | "error";
-export type QueryOutput<R> = {
-	status: QueryStatus;
-	data?: R;
-	error?: unknown;
-	retries: number;
+export type QueryOutput<QueryResult = unknown> = {
+	status: Readonly<
+		| "idle"
+		| "success"
+		| "error"
+		| "loading"
+		| "refreshing"
+		| "mutating"
+		| "mutate-error"
+	>;
+	data?: Readonly<QueryResult>;
+	error?: Readonly<unknown>;
+	retries?: Readonly<number>;
+	mutate: (data: QueryResult) => void;
 };
 ```
 
@@ -119,6 +127,13 @@ Number of query retries.
 Is reset every time data is fetched.
 Available on all statuses.
 
+### `mutate`
+
+The mutate method to mutate the current query.
+This is optimistic, the data of the query will be modified while the request is pending.
+When the request resolves, the query data will be refreshed with the server data.
+If the request fails, the original data of the query will be restored.
+
 ## Config
 
 ```ts
@@ -129,6 +144,7 @@ export type QueryConfig = {
 	refetchOnWindowFocus?: boolean;
 	staleTime?: number;
 	cacheTime?: number;
+	mutator?: (data: QueryResult, params: QueryParam) => QueryResult;
 };
 ```
 
@@ -137,6 +153,7 @@ export type QueryConfig = {
 The number of retries to retry a query before ending up in the error status.
 Also accepts a callback method `((retryAttempt: number, error: unknown) => boolean)` to give more control to the consumer.
 When a query is being retried, the status remains in the original (loading or refreshing) status.
+[Example](https://timdeschryver.github.io/rx-query/?path=/story/rx-query--error).
 
 Default: `3`
 
@@ -158,6 +175,7 @@ Usage:
 
 The delay in milliseconds before retrying the query.
 Also accepts a callback method `((retryAttempt: number) => number)` to give more control to the consumer.
+[Example](https://timdeschryver.github.io/rx-query/?path=/story/rx-query--error).
 
 Default: `(n) => (n + 1) * 1000`
 
@@ -177,6 +195,7 @@ Usage:
 ### `refetchInterval`
 
 Invoke the query in the background every x milliseconds, and emit the new value when the query is resolved.
+[Example](https://timdeschryver.github.io/rx-query/?path=/story/rx-query--refresh-on-interval).
 
 Default: `Number.MAX_VALUE`
 
@@ -192,6 +211,7 @@ Usage:
 ### `refetchOnWindowFocus`
 
 Invoke the query in the background when the window is focused, and emit the new value when the query is resolved.
+[Example](https://timdeschryver.github.io/rx-query/?path=/story/rx-query--refresh-on-focus).
 
 Default: `false`
 
@@ -206,6 +226,7 @@ Usage:
 ### `cacheTime`
 
 Set the cache time (in milliseconds) for a query key.
+[Example](https://timdeschryver.github.io/rx-query/?path=/story/rx-query--type-ahead).
 
 Default: `30_000` (5 minutes)
 
@@ -228,6 +249,26 @@ Usage:
 ```ts
 {
 	staleTime: 60_000,
+}
+```
+
+### `mutator`
+
+The `mutator`, is the method that will be invoked when the `mutate` method is called.
+It receives the data passed to the `mutate` method and the current params of the query.
+[Example](https://timdeschryver.github.io/rx-query/?path=/story/rx-query--mutate).
+
+Default: `mutator: (data) => data`
+
+Usage:
+
+```ts
+{
+  mutator: (data, params) =>
+    this.http
+      .post(`/persons/${params.id}`, data)
+      // 👇 important to let the request throw in order to rollback
+      .pipe(catchError((err) => throwError(err.statusText))),
 }
 ```
 
