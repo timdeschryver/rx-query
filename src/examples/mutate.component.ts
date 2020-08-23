@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { query, QueryOutput } from '../../rx-query';
 import { Subject, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { Mutator } from '../../rx-query/types';
 
 @Component({
 	selector: 'example-mutate',
@@ -28,7 +29,7 @@ import { catchError } from 'rxjs/operators';
 								{{ person.data.name }} ({{ person.data.id }})
 							</div>
 							<div class="text-gray-600">🏡 {{ person.data.address }}</div>
-							<div class="text-gray-500 text-sm">
+							<div class="text-gray-500 text-sm mb-3">
 								🔃 {{ person.data.timestamp | date: 'fullTime' }}
 							</div>
 
@@ -41,7 +42,7 @@ import { catchError } from 'rxjs/operators';
 
 							<button
 								(click)="mutateError(person.mutate)"
-								class="-transparent hover:bg-blue-500 text-blue-700 font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded"
+								class="-transparent hover:bg-red-500 text-red-700 font-semibold hover:text-white py-2 px-4 border border-red-500 hover:border-transparent rounded"
 							>
 								Mutate with error
 							</button>
@@ -66,12 +67,13 @@ export class MutateComponent {
 		mutator: (data, id) =>
 			this.http
 				.post(`/persons/${id}`, data)
+				//    👇 important to rethrow 👇
 				.pipe(catchError((err) => throwError(err.statusText))),
 	});
 
 	constructor(private http: HttpClient) {}
 
-	mutate(mutate: QueryOutput['mutate']): void {
+	mutate(mutate: Mutator): void {
 		mutate({
 			name: [
 				'Sarah',
@@ -84,12 +86,12 @@ export class MutateComponent {
 				'Bonnie',
 				'Abigail',
 				'Chloe',
-			][Math.round(Math.random() * 10)],
+			][Math.max(0, Math.round(Math.random() * 10) - 1)],
 			address: 'updated adress',
 		});
 	}
 
-	mutateError(mutate: QueryOutput['mutate']): void {
+	mutateError(mutate: Mutator): void {
 		mutate({
 			name: '',
 			address: 'updated adress',

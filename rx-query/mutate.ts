@@ -1,5 +1,5 @@
-import { DEFAULT_QUERY_CONFIG } from '.';
 import { revalidate } from './cache';
+import { DEFAULT_QUERY_CONFIG } from './config';
 
 export function mutateOptimistic(key: string, data: unknown): void {
 	revalidate.next({

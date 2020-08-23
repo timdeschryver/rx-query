@@ -102,12 +102,12 @@ export class RxQueryDevToolComponent {
 			return Object.entries(c).map(([key, value]) => {
 				return {
 					key,
-					data: value.state.result.data,
-					subscriptions: value.state.subscriptions,
-					status: value.state.result.status,
-					staleAt: value.state.staleAt,
-					removeCacheAt: value.state.removeCacheAt,
-					error: value.state.result.error,
+					data: value.groupState.result.data,
+					subscriptions: value.groupState.subscriptions,
+					status: value.groupState.result.status,
+					staleAt: value.groupState.staleAt,
+					removeCacheAt: value.groupState.removeCacheAt,
+					error: value.groupState.result.error,
 					trigger: value.trigger,
 				};
 			});

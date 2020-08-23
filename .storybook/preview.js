@@ -7,9 +7,13 @@ if (typeof global.process === "undefined") {
 	// Start the mocking when each story is loaded.
 	// Repetitive calls to the `.start()` method do not register a new worker,
 	// but check whether there's an existing once, reusing it, if so.
-	worker.start({
-		serviceWorker: {
-			url: "/rx-query/mockServiceWorker.js",
-		},
-	});
+	if (location.origin.includes("localhost:6006")) {
+		worker.start();
+	} else {
+		worker.start({
+			serviceWorker: {
+				url: "/rx-query/mockServiceWorker.js",
+			},
+		});
+	}
 }

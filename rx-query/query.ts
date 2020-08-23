@@ -29,18 +29,9 @@ import {
 	shareReplay,
 } from 'rxjs/operators';
 import { revalidate, cache } from './cache';
+import { DEFAULT_QUERY_CONFIG } from './config';
 import { mutate, mutateError, mutateOptimistic } from './mutate';
 import { QueryOutput, QueryConfig, Revalidator } from './types';
-
-export const DEFAULT_QUERY_CONFIG: Required<QueryConfig> = {
-	retries: 3,
-	retryDelay: (n) => (n + 1) * 1000,
-	refetchOnWindowFocus: false,
-	refetchInterval: Number.MAX_VALUE,
-	staleTime: 0,
-	cacheTime: 30_0000, // 5 minutes
-	mutator: (data) => data,
-};
 
 export function query<QueryResult, QueryParam>(
 	key: string,
@@ -161,6 +152,7 @@ export function query(
 			.pipe(mergeAll())
 			.subscribe({
 				next: (c) => revalidate.next(c),
+				complete: () => console.warn('complete'),
 			});
 
 		return cache.pipe(
@@ -169,10 +161,10 @@ export function query(
 			filter(
 				(v) =>
 					!!v &&
-					// exclude state changes that are unimportant to consumer
+					// exclude state changes that are unimportant to the consumer
 					!['query-unsubscribe', 'group-unsubscribe'].includes(v.trigger),
 			),
-			map((v) => v.state.result as QueryOutput),
+			map((v) => v.groupState.result as QueryOutput),
 			distinctUntilChanged(),
 			finalize(() => {
 				params$.pipe(take(1)).subscribe((params) => {
@@ -184,7 +176,6 @@ export function query(
 
 				triggersSubscription.unsubscribe();
 			}),
-			share(),
 		);
 	});
 }
@@ -292,11 +283,11 @@ function parseInput(inputs: unknown[]) {
 
 	const hasParamInput = typeof firstInput !== 'function';
 
-	const queryParam = (hasParamInput
+	const queryParam = hasParamInput
 		? isObservable(firstInput)
 			? firstInput
 			: of(firstInput)
-		: of(null)) as Observable<unknown>;
+		: of(null);
 
 	const query = (typeof firstInput === 'function'
 		? firstInput

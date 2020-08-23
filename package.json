@@ -1,6 +1,6 @@
 {
 	"name": "rx-query",
-	"version": "0.0.5",
+	"version": "0.0.6",
 	"description": "rx-query",
 	"author": "Tim Deschryver",
 	"repository": {
@@ -34,11 +34,11 @@
 		"lint": "eslint \"./**/*.{js,ts}\"",
 		"predist": "yarn test",
 		"dist": "yarn dist:clean && yarn dist:build",
-		"dist:build": "yarn dist:build:cjs && yarn dist:build:esm",
+		"dist:build": "yarn dist:build:cjs && yarn dist:build:esm && npm pack",
 		"dist:build:bundle": "webpack --config webpack.config.js && webpack --config webpack.config.js --env.production",
 		"dist:build:cjs": "tsc -p tsconfig-dist-cjs.json",
 		"dist:build:esm": "tsc -p tsconfig-dist-esm.json",
-		"dist:clean": "rimraf dist",
+		"dist:clean": "rimraf dist && rimraf *.tgz",
 		"postdist": "yarn test:types",
 		"storybook": "start-storybook -p 6006",
 		"build-storybook": "build-storybook",

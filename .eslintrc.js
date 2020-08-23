@@ -15,5 +15,6 @@ module.exports = {
 	rules: {
 		"@typescript-eslint/no-unused-vars": ["off", { argsIgnorePattern: "^_" }],
 		"no-mixed-spaces-and-tabs": "off",
+		"no-case-declarations": "off",
 	},
 };

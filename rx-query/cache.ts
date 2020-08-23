@@ -1,4 +1,13 @@
-import { Subject, of, scheduled, asapScheduler, EMPTY, timer } from 'rxjs';
+import {
+	Subject,
+	of,
+	scheduled,
+	asapScheduler,
+	EMPTY,
+	timer,
+	Observable,
+	GroupedObservable,
+} from 'rxjs';
 import {
 	scan,
 	groupBy,
@@ -19,8 +28,6 @@ import { QueryOutput, Revalidator } from './types';
 export const revalidate = new Subject<Revalidator>();
 
 export const cache = revalidate.pipe(
-	// RxJS Live: What GroupsBy in Vegas, Stays in Vegas - Mike Ryan & Sam Julien
-	// https://www.youtube.com/watch?v=hsr4ArAsOL4
 	groupBy(
 		(r) => r.key,
 		(r) => r,
@@ -52,39 +59,430 @@ export const cache = revalidate.pipe(
 	map((group) =>
 		group.pipe(
 			observeOn(asapScheduler),
-
-			// keep a list of subscriptions
-			// unsubscribe from the group when all subscribers are unsubscribed
 			scan(
-				(subscriptions, revalidator) => {
-					if (
-						subscriptions.subscriptions == 0 &&
-						['interval', 'focus'].includes(revalidator.trigger)
-					) {
-						revalidator.trigger = 'query-subscribe';
-					}
-
-					const increment = {
-						'query-subscribe': +1,
-						'query-unsubscribe': -1,
-					} as { [index: string]: number };
-
-					subscriptions.revalidator = {
-						...subscriptions.revalidator,
-						...revalidator,
-					};
-					subscriptions.subscriptions += increment[revalidator.trigger] || 0;
-					subscriptions.subscriptions = Math.max(
-						subscriptions.subscriptions,
-						0,
-					);
-					return subscriptions;
-				},
+				(subscriptions, revalidator) =>
+					holdSubscriptionsCount(subscriptions, revalidator),
 				{
 					subscriptions: 0,
 				} as GroupSubscription,
 			),
-			// unsubscribe group when we lost the last subscriber
+			unsubscribeOnNoSubscriptions(),
+			mergeScan(
+				({ groupState }, { revalidator, subscriptions }) => {
+					const defaultHandlers = {
+						'query-subscribe': () =>
+							invokeQuery(groupState, revalidator, subscriptions, group),
+						focus: () =>
+							invokeQuery(groupState, revalidator, subscriptions, group),
+						interval: () =>
+							invokeQuery(groupState, revalidator, subscriptions, group),
+						manual: () =>
+							invokeQuery(groupState, revalidator, subscriptions, group),
+
+						'group-unsubscribe': () => updateTrigger(groupState, revalidator),
+						'query-unsubscribe': () =>
+							updateSubscriptions(groupState, revalidator, subscriptions),
+						'group-remove': () =>
+							updateSubscriptions(groupState, revalidator, subscriptions),
+
+						'mutate-optimistic': () => startMutation(groupState, revalidator),
+						'mutate-success': () => mutationCommit(groupState, revalidator),
+						'mutate-error': () => updateTrigger(groupState, revalidator),
+					} as {
+						[handler in Revalidator['trigger']]: () => Observable<Group>;
+					};
+
+					const handlers = {
+						idle: {
+							...defaultHandlers,
+						},
+						success: {
+							...defaultHandlers,
+						},
+						error: {
+							...defaultHandlers,
+						},
+						loading: {
+							...defaultHandlers,
+
+							// reset the status to allow a resubscription later
+							'group-unsubscribe': () =>
+								resetGroupStatus(groupState, revalidator),
+
+							// a query is already pending, when it resolves all queries will be updated
+							'query-subscribe': () =>
+								updateSubscriptions(groupState, revalidator, subscriptions),
+							interval: () =>
+								updateSubscriptions(groupState, revalidator, subscriptions),
+							focus: () =>
+								updateSubscriptions(groupState, revalidator, subscriptions),
+							manual: () =>
+								updateSubscriptions(groupState, revalidator, subscriptions),
+						},
+						refreshing: {
+							...defaultHandlers,
+
+							// reset the status to allow a resubscription later
+							'group-unsubscribe': () =>
+								resetGroupStatus(groupState, revalidator),
+
+							// a query is already pending, when it resolves all queries will be updated
+							'query-subscribe': () =>
+								updateSubscriptions(groupState, revalidator, subscriptions),
+							interval: () =>
+								updateSubscriptions(groupState, revalidator, subscriptions),
+							focus: () =>
+								updateSubscriptions(groupState, revalidator, subscriptions),
+							manual: () =>
+								updateSubscriptions(groupState, revalidator, subscriptions),
+						},
+						mutating: {
+							...defaultHandlers,
+
+							// ignore refreshes while mutating until the mutation resolves
+							'query-subscribe': () =>
+								updateSubscriptions(groupState, revalidator, subscriptions),
+							interval: () =>
+								updateSubscriptions(groupState, revalidator, subscriptions),
+							focus: () =>
+								updateSubscriptions(groupState, revalidator, subscriptions),
+							manual: () =>
+								updateSubscriptions(groupState, revalidator, subscriptions),
+
+							// handle mutation results
+							'mutate-optimistic': () => updateTrigger(groupState, revalidator),
+							'mutate-error': () => mutationRollback(groupState, revalidator),
+						},
+						'mutate-error': {
+							...defaultHandlers,
+						},
+					} as {
+						[status in QueryOutput['status']]: {
+							[handler in Revalidator['trigger']]: () => Observable<Group>;
+						};
+					};
+
+					const handler =
+						handlers[groupState.result.status][revalidator.trigger];
+
+					if (!handler) {
+						console.warn('[rx-query] Handler not found', {
+							current: groupState.result.status,
+							event: revalidator.trigger,
+						});
+						return updateTrigger(groupState, revalidator);
+					}
+
+					return handler();
+				},
+				{
+					groupState: {
+						key: '__rx-query-unknown',
+						staleAt: undefined,
+						subscriptions: 0,
+						result: {
+							status: 'idle',
+						},
+					},
+					trigger: 'initial' as Revalidator['trigger'],
+				} as Group,
+			),
+		),
+	),
+	mergeAll(),
+	// update the cache
+	scan((_cache, { groupState, trigger }) => {
+		return updateCache(trigger, groupState, _cache);
+	}, {} as Cache),
+	share(),
+);
+
+/**
+ * Updates cache for the current key
+ */
+function updateCache(
+	trigger: Revalidator['trigger'],
+	groupState: GroupState,
+	_cache: Cache,
+): Cache {
+	switch (trigger) {
+		case 'group-remove':
+			const {
+				[groupState.key]: _removeGroupKey,
+				...remainingCacheRemove
+			} = _cache;
+			return remainingCacheRemove;
+		case 'group-unsubscribe':
+			const {
+				[groupState.key]: removeGroupKey,
+				...remainingCacheUnsubscribe
+			} = _cache;
+			if (removeGroupKey?.groupState.result.data === undefined) {
+				return remainingCacheUnsubscribe;
+			}
+			return {
+				..._cache,
+				[groupState.key]: {
+					groupState: {
+						...groupState,
+						subscriptions: 0,
+					},
+					trigger: trigger,
+				},
+			};
+		default:
+			return {
+				..._cache,
+				[groupState.key]: {
+					groupState: {
+						...groupState,
+						subscriptions:
+							groupState.subscriptions === undefined
+								? _cache[groupState.key]?.groupState.subscriptions ?? 0
+								: groupState.subscriptions,
+					},
+					trigger: trigger,
+				},
+			};
+	}
+}
+
+/**
+ * Invokes the query and updates the state by the response
+ * Starts with an initial state
+ */
+function invokeQuery(
+	groupState: GroupState,
+	revalidator: Revalidator<unknown, unknown>,
+	subscriptions: number,
+	group: GroupedObservable<string, Revalidator<unknown, unknown>>,
+): Observable<Group> {
+	// return the cached data when it's still fresh
+	if (
+		revalidator.trigger !== 'manual' &&
+		groupState.staleAt &&
+		groupState.staleAt > Date.now()
+	) {
+		const cached: GroupState = {
+			...groupState,
+			subscriptions,
+			result: {
+				...groupState.result,
+				status: 'success',
+			},
+		};
+
+		return of({
+			groupState: cached,
+			trigger: revalidator.trigger,
+		});
+	}
+
+	if (!revalidator.query) {
+		console.warn(`[rx-query] Revalidator should have a query`, {
+			key: revalidator.key,
+			trigger: revalidator.trigger,
+		});
+		return of({ groupState, trigger: revalidator.trigger });
+	}
+
+	const hasCache = !!groupState.staleAt;
+	const intialState = hasCache ? 'refreshing' : 'loading';
+
+	const invoker = revalidator.query(intialState, revalidator.params).pipe(
+		takeUntil(
+			group.pipe(
+				filter(
+					(r) =>
+						r.trigger === 'group-unsubscribe' || r.trigger === 'group-remove',
+				),
+			),
+		),
+		map(
+			(queryResult): GroupState => {
+				const now = Date.now();
+				return {
+					key: revalidator.key,
+					result: queryResult,
+					staleAt:
+						queryResult.status === 'success'
+							? now + revalidator.config.staleTime
+							: undefined,
+					removeCacheAt:
+						queryResult.status === 'success'
+							? now + revalidator.config.cacheTime
+							: undefined,
+					originalResultData: undefined,
+					// ignore subscriptions, query could already be unsubscribed and this will re-create a subscription because this subscription is outdate
+					subscriptions: undefined,
+				};
+			},
+		),
+	);
+
+	const initial: GroupState = {
+		key: revalidator.key,
+		result: {
+			status: intialState,
+			...(hasCache ? { data: groupState.result.data } : {}),
+			mutate: groupState.result.mutate,
+		},
+		staleAt: groupState.staleAt,
+		subscriptions,
+	};
+
+	return scheduled([of(initial), invoker], asapScheduler).pipe(
+		concatAll(),
+		map((r) => {
+			return {
+				groupState: r,
+				trigger: revalidator.trigger,
+			};
+		}),
+	);
+}
+
+/**
+ * Starts the mutation and adds the old state to the group state
+ */
+function startMutation(
+	groupState: GroupState,
+	revalidator: Revalidator<unknown, unknown>,
+): Observable<Group> {
+	return guardAgainstUnknownState(groupState, () => {
+		if (!revalidator.data) {
+			console.warn(`[rx-query] Revalidator should have data`, {
+				key: revalidator.key,
+				trigger: revalidator.trigger,
+			});
+		}
+
+		const newResult: QueryOutput = {
+			...groupState.result,
+			data: (typeof revalidator.data === 'object'
+				? {
+						...groupState.result.data,
+						...revalidator.data,
+				  }
+				: revalidator.data) as Readonly<unknown>,
+			status: 'mutating',
+		};
+		return of({
+			groupState: {
+				...groupState,
+				result: newResult,
+				originalResultData: groupState.result.data,
+			},
+			trigger: revalidator.trigger,
+		});
+	});
+}
+
+function mutationCommit(
+	groupState: GroupState,
+	revalidator: Revalidator<unknown, unknown>,
+): Observable<Group> {
+	return guardAgainstUnknownState(groupState, () => {
+		if (!revalidator.data) {
+			console.warn(`[rx-query] Revalidator should have data`, {
+				key: revalidator.key,
+				trigger: revalidator.trigger,
+			});
+		}
+
+		const newResult: QueryOutput = {
+			...groupState.result,
+			data: (typeof revalidator.data === 'object'
+				? {
+						...groupState.result.data,
+						...revalidator.data,
+				  }
+				: revalidator.data) as Readonly<unknown>,
+			status: 'success',
+		};
+
+		return of({
+			groupState: {
+				...groupState,
+				result: newResult,
+				originalResultData: undefined,
+			},
+			trigger: revalidator.trigger,
+		});
+	});
+}
+
+/**
+ *  Rollbacks the mutation and clears the previous data
+ */
+function mutationRollback(
+	groupState: GroupState,
+	revalidator: Revalidator<unknown, unknown>,
+): Observable<Group> {
+	return guardAgainstUnknownState(groupState, () => {
+		if (!revalidator.data) {
+			console.warn(`[rx-query] Revalidator should have data`, {
+				key: revalidator.key,
+				trigger: revalidator.trigger,
+			});
+		}
+
+		const newResult: QueryOutput = {
+			...groupState.result,
+			data: groupState.originalResultData as Readonly<unknown>,
+			error: revalidator.data as Readonly<unknown>,
+			status: 'mutate-error',
+		};
+
+		return of({
+			groupState: {
+				...groupState,
+				result: newResult,
+			},
+			trigger: revalidator.trigger,
+		});
+	});
+}
+
+/**
+ * Holds the number of subscribers
+ * Increments when there's a new consumer (query-subscribe)
+ * Decrements when the consumer unsubscribes (query-unsubscribe)
+ */
+function holdSubscriptionsCount(
+	subscriptions: GroupSubscription,
+	revalidator: Revalidator<unknown, unknown>,
+) {
+	let { trigger } = revalidator;
+
+	// reset trigger to `query-subscribe` when all subscriptions are lost
+	if (
+		subscriptions.subscriptions == 0 &&
+		['interval', 'focus'].includes(trigger)
+	) {
+		trigger = 'query-subscribe';
+	}
+
+	const increment = {
+		'query-subscribe': +1,
+		'query-unsubscribe': -1,
+	} as { [index: string]: number };
+
+	subscriptions.revalidator = {
+		...subscriptions.revalidator,
+		...revalidator,
+	};
+	subscriptions.subscriptions += increment[trigger] || 0;
+	subscriptions.subscriptions = Math.max(subscriptions.subscriptions, 0);
+	return subscriptions;
+}
+
+/**
+ * Sends a `group-unsubscribe` event when all subscribers have unsubscribed
+ */
+function unsubscribeOnNoSubscriptions() {
+	return (source: Observable<GroupSubscription>) => {
+		return source.pipe(
 			tap((group) => {
 				if (
 					group.subscriptions === 0 &&
@@ -98,280 +496,83 @@ export const cache = revalidate.pipe(
 					});
 				}
 			}),
-			mergeScan(
-				({ groupState }, { revalidator, subscriptions }) => {
-					// short-circuit, these triggers don't affect state
-					if (
-						['group-remove', 'query-unsubscribe'].includes(revalidator.trigger)
-					) {
-						return of({
-							groupState: {
-								...groupState,
-								subscriptions,
-							},
-							trigger: revalidator.trigger,
-						});
-					}
+		);
+	};
+}
 
-					// ignore new queries when mutating
-					if (
-						groupState.result.status === 'mutating' &&
-						!['mutate-success', 'mutate-error'].includes(revalidator.trigger)
-					) {
-						return of({
-							groupState,
-							trigger: revalidator.trigger,
-						});
-					}
+/**
+ * Update the state with the new subscription count
+ */
+function updateSubscriptions(
+	groupState: GroupState,
+	revalidator: Revalidator,
+	subscriptions: number,
+): Observable<Group> {
+	return guardAgainstUnknownState(groupState, () => {
+		if (groupState.subscriptions === subscriptions) {
+			return updateTrigger(groupState, revalidator);
+		}
 
-					if (revalidator.trigger === 'group-unsubscribe') {
-						return of({
-							groupState: {
-								...groupState,
-								result: {
-									...groupState.result,
-									// reset status to allow a resubscribe
-									status: ['loading', 'refreshing'].includes(
-										groupState.result.status,
-									)
-										? ('idle' as QueryOutput['status'])
-										: groupState.result.status,
-								},
-								subscriptions,
-							},
-							trigger: revalidator.trigger,
-						});
-					}
+		return of({
+			groupState: {
+				...groupState,
+				subscriptions,
+			},
+			trigger: revalidator.trigger,
+		});
+	});
+}
 
-					if (revalidator.trigger === 'mutate-success') {
-						if (!revalidator.data) {
-							console.warn(`[rx-query] Revalidator should have data`, {
-								key: revalidator.key,
-								trigger: revalidator.trigger,
-							});
-						}
-
-						const newResult: QueryOutput = {
-							...groupState.result,
-							data: (typeof revalidator.data === 'object'
-								? {
-										...groupState.result.data,
-										...revalidator.data,
-								  }
-								: revalidator.data) as Readonly<unknown>,
-							status: 'success',
-						};
-
-						return of({
-							groupState: {
-								...groupState,
-								result: newResult,
-								originalResultData: undefined,
-							},
-							trigger: revalidator.trigger,
-						});
-					}
-
-					if (revalidator.trigger === 'mutate-error') {
-						if (!revalidator.data) {
-							console.warn(`[rx-query] Revalidator should have data`, {
-								key: revalidator.key,
-								trigger: revalidator.trigger,
-							});
-						}
-
-						const newResult: QueryOutput = {
-							...groupState.result,
-							data: groupState.originalResultData as Readonly<unknown>,
-							error: revalidator.data as Readonly<unknown>,
-							status: 'mutate-error',
-						};
-
-						return of({
-							groupState: {
-								...groupState,
-								result: newResult,
-							},
-							trigger: revalidator.trigger,
-						});
-					}
-
-					if (revalidator.trigger === 'mutate-optimistic') {
-						if (!revalidator.data) {
-							console.warn(`[rx-query] Revalidator should have data`, {
-								key: revalidator.key,
-								trigger: revalidator.trigger,
-							});
-						}
-
-						const newResult: QueryOutput = {
-							...groupState.result,
-							data: (typeof revalidator.data === 'object'
-								? {
-										...groupState.result.data,
-										...revalidator.data,
-								  }
-								: revalidator.data) as Readonly<unknown>,
-							status: 'mutating',
-						};
-						return of({
-							groupState: {
-								...groupState,
-								result: newResult,
-								originalResultData: groupState.result.data,
-							},
-							trigger: revalidator.trigger,
-						});
-					}
-
-					// we're already revalidating the cache
-					// all subscribers will receive the latest value
-					// when the query resolves
-					if (
-						groupState.result &&
-						['loading', 'refreshing'].includes(groupState.result.status)
-					) {
-						return of({
-							groupState: { ...groupState, subscriptions },
-							trigger: revalidator.trigger,
-						});
-					}
-
-					// return the cached data when it's still fresh
-					if (
-						revalidator.trigger !== 'manual' &&
-						groupState.staleAt &&
-						groupState.staleAt > Date.now()
-					) {
-						const cached: GroupState = {
-							...groupState,
-							subscriptions,
-							result: {
-								...groupState.result,
-								status: 'success',
-							},
-						};
-
-						return of({
-							groupState: cached,
-							trigger: revalidator.trigger,
-						});
-					}
-
-					const hasCache = !!groupState.staleAt;
-					const intialState = hasCache ? 'refreshing' : 'loading';
-
-					if (!revalidator.query) {
-						console.warn(`[rx-query] Revalidator should have a query`, {
-							key: revalidator.key,
-							trigger: revalidator.trigger,
-						});
-						return of({ groupState, trigger: revalidator.trigger });
-					}
-
-					// invoke the query, set the initial query state
-					const invoker = revalidator
-						.query(intialState, revalidator.params)
-						.pipe(
-							takeUntil(
-								group.pipe(filter((r) => r.trigger === 'group-unsubscribe')),
-							),
-							map(
-								(queryResult): GroupState => {
-									const now = Date.now();
-									return {
-										key: revalidator.key,
-										result: queryResult,
-										staleAt:
-											queryResult.status === 'success'
-												? now + revalidator.config.staleTime
-												: undefined,
-										removeCacheAt:
-											queryResult.status === 'success'
-												? now + revalidator.config.cacheTime
-												: undefined,
-										originalResultData: undefined,
-										// ignore subscriptions, query could already be unsubscribed and this will re-create a subscription because this subscription is outdate
-										subscriptions: undefined,
-									};
-								},
-							),
-						);
-
-					const initial: GroupState = {
-						key: revalidator.key,
-						result: {
-							status: intialState,
-							...(hasCache ? { data: groupState.result.data } : {}),
-							mutate: groupState.result.mutate,
-						},
-						staleAt: groupState.staleAt,
-						subscriptions,
-					};
-
-					return scheduled([of(initial), invoker], asapScheduler).pipe(
-						concatAll(),
-						map((r) => {
-							return {
-								groupState: r,
-								trigger: revalidator.trigger,
-							};
-						}),
-					);
+/**
+ * Reset status to idle to allow a resubscribe
+ */
+function resetGroupStatus(
+	groupState: GroupState,
+	revalidator: Revalidator,
+): Observable<Group> {
+	return guardAgainstUnknownState(groupState, () => {
+		return of({
+			groupState: {
+				...groupState,
+				result: {
+					...groupState.result,
+					status: 'idle',
 				},
-				{
-					groupState: {
-						key: 'unknown',
-						staleAt: undefined,
-						subscriptions: 0,
-						result: {
-							status: 'idle',
-						} as QueryOutput,
-					} as GroupState,
-					trigger: 'unknown' as Revalidator['trigger'],
-				},
-			),
-		),
-	),
-	mergeAll(),
-	// update the cache
-	scan(
-		(_cache, { groupState, trigger }) => {
-			if (trigger === 'group-remove') {
-				const { [groupState.key]: _removeGroupKey, ...remainingCache } = _cache;
-				return remainingCache;
-			}
+			},
+			trigger: revalidator.trigger,
+		});
+	});
+}
 
-			if (trigger === 'group-unsubscribe') {
-				const { [groupState.key]: removeGroupKey, ...remainingCache } = _cache;
-				if (removeGroupKey?.state.result.data === undefined) {
-					return remainingCache;
-				}
-			}
+/**
+ * Update the state with the new trigger
+ */
+function updateTrigger(
+	groupState: GroupState,
+	revalidator: Revalidator,
+): Observable<Group> {
+	return guardAgainstUnknownState(groupState, () => {
+		return of({
+			groupState,
+			trigger: revalidator.trigger,
+		});
+	});
+}
 
-			return {
-				..._cache,
-				[groupState.key]: {
-					state: {
-						...groupState,
-						subscriptions:
-							groupState.subscriptions === undefined
-								? _cache[groupState.key]?.state.subscriptions ?? 0
-								: groupState.subscriptions,
-					},
-					trigger: trigger,
-				},
-			};
-		},
-		{} as {
-			[key: string]: {
-				state: GroupState;
-				trigger: Revalidator['trigger'];
-			};
-		},
-	),
-	share(),
-);
+/**
+ * When this happens it means that the cache is already cleared
+ * We can ignore this event
+ */
+function guardAgainstUnknownState(
+	groupState: GroupState,
+	fn: () => Observable<Group>,
+): Observable<Group> {
+	if (groupState.key === '__rx-query-unknown') {
+		return EMPTY;
+	}
+
+	return fn();
+}
 
 type GroupSubscription = {
 	subscriptions: number;
@@ -385,4 +586,13 @@ type GroupState = {
 	staleAt?: number;
 	removeCacheAt?: number;
 	subscriptions?: number;
+};
+
+type Group = {
+	groupState: GroupState;
+	trigger: Revalidator['trigger'];
+};
+
+type Cache = {
+	[key: string]: Group;
 };

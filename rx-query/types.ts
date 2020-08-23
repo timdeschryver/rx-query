@@ -13,8 +13,10 @@ export type QueryOutput<QueryResult = unknown> = {
 	data?: Readonly<QueryResult>;
 	error?: Readonly<unknown>;
 	retries?: Readonly<number>;
-	mutate: (data: QueryResult) => void;
+	mutate: Mutator<QueryResult>;
 };
+
+export type Mutator<QueryResult = unknown> = (data: QueryResult) => void;
 
 export type QueryConfig<QueryResult = unknown, QueryParam = unknown> = {
 	retries?: number | ((retryAttempt: number, error: unknown) => boolean);

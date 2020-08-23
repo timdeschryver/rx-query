@@ -416,7 +416,7 @@ it('can disable refresh on data when data is still fresh', async () => {
 	sub.unsubscribe();
 });
 
-it('can mutate data (allows partial)', async () => {
+it('can mutate data (allows partial mutations)', async () => {
 	const values = [];
 	setTimeout(() => {
 		revalidate.next({
@@ -460,13 +460,13 @@ it('rollbacks when a mutation errors', async () => {
 			trigger: 'mutate-optimistic',
 			config: DEFAULT_QUERY_CONFIG,
 		},
-		// 👇 gets ignore because we're in `mutating` state
+		// 👇 gets ignored because we're in `mutating` state
 		{
 			key: 'test',
 			trigger: 'interval',
 			config: DEFAULT_QUERY_CONFIG,
 		},
-		// 👇 gets ignore because we're in `mutating` state
+		// 👇 gets ignored because we're in `mutating` state
 		{
 			key: 'test',
 			data: 'new value 2',
