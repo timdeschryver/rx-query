@@ -2,7 +2,7 @@
 	"compilerOptions": {
 		"module": "esnext",
 		"outDir": "dist/esm",
-		"target": "esnext"
+		"target": "ES2019"
 	},
 	"extends": "./tsconfig-dist.json"
 }

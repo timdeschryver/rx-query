@@ -2,7 +2,7 @@
 	"compilerOptions": {
 		"module": "commonjs",
 		"outDir": "dist/cjs",
-		"target": "esnext"
+		"target": "ES2019"
 	},
 	"extends": "./tsconfig-dist.json"
 }
