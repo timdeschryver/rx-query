@@ -28,7 +28,7 @@ import {
 	share,
 	shareReplay,
 } from 'rxjs/operators';
-import { revalidate, cache } from './cache';
+import { revalidate, queryCache } from './cache';
 import { DEFAULT_QUERY_CONFIG } from './config';
 import { mutate, mutateError, mutateOptimistic } from './mutate';
 import { QueryOutput, QueryConfig, Revalidator } from './types';
@@ -155,7 +155,7 @@ export function query(
 				complete: () => console.warn('complete'),
 			});
 
-		return cache.pipe(
+		return queryCache.pipe(
 			withLatestFrom(params$),
 			map(([c, k]) => c[k.key]),
 			filter(

@@ -14,7 +14,6 @@ import {
 	mergeAll,
 	map,
 	tap,
-	share,
 	mergeScan,
 	ignoreElements,
 	observeOn,
@@ -22,12 +21,13 @@ import {
 	switchMap,
 	takeUntil,
 	concatAll,
+	shareReplay,
 } from 'rxjs/operators';
 import { QueryOutput, Revalidator } from './types';
 
 export const revalidate = new Subject<Revalidator>();
 
-export const cache = revalidate.pipe(
+export const queryCache = revalidate.pipe(
 	groupBy(
 		(r) => r.key,
 		(r) => r,
@@ -194,7 +194,7 @@ export const cache = revalidate.pipe(
 	scan((_cache, { groupState, trigger }) => {
 		return updateCache(trigger, groupState, _cache);
 	}, {} as Cache),
-	share(),
+	shareReplay(1),
 );
 
 /**

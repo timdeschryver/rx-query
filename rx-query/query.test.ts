@@ -2,14 +2,12 @@ import { interval, of, throwError } from 'rxjs';
 import { take, takeWhile, map } from 'rxjs/operators';
 import { eachValueFrom } from 'rxjs-for-await';
 import { fireEvent } from '@testing-library/dom';
-import { query, DEFAULT_QUERY_CONFIG } from '.';
-import { revalidate } from './cache';
-import { QueryOutput, Revalidator } from './types';
+import { query, DEFAULT_QUERY_CONFIG, revalidate, QueryOutput, Revalidator } from '.';
 
 it('first loads then succeeds', async () => {
 	const values = [];
 	for await (const value of eachValueFrom(
-		query('test', () => of({ id: '3' })).pipe(
+		query(expect.getState().currentTestName, () => of({ id: '3' })).pipe(
 			takeWhile((x) => x.status !== 'success', true),
 		),
 	)) {
@@ -29,7 +27,7 @@ it('first loads then succeeds', async () => {
 it('retries then errors', async () => {
 	const values: any[] = [];
 	for await (const value of eachValueFrom(
-		query('test', () => throwError('Error')).pipe(
+		query(expect.getState().currentTestName, () => throwError('Error')).pipe(
 			takeWhile((x) => x.status !== 'error', true),
 		),
 	)) {
@@ -58,7 +56,7 @@ it('retries then errors', async () => {
 it('can override default error config with retries', async () => {
 	const values: any[] = [];
 	for await (const value of eachValueFrom(
-		query('test', () => throwError('Error'), {
+		query(expect.getState().currentTestName, () => throwError('Error'), {
 			retries: 1,
 			retryDelay: 1,
 		}).pipe(takeWhile((x) => x.status !== 'error', true)),
@@ -86,7 +84,7 @@ it('can override default error config with retries', async () => {
 it('can override default error config with custom retry', async () => {
 	const values: any[] = [];
 	for await (const value of eachValueFrom(
-		query('test', () => throwError('Error'), {
+		query(expect.getState().currentTestName, () => throwError('Error'), {
 			retries: (n, error) => {
 				expect(error).toBe('Error');
 				return n < 5;
@@ -119,11 +117,13 @@ it('retrieves data when params change and caches previous results', async () => 
 	let success = 0;
 
 	// keep true alive, to keep the true group alive
-	const sub = query('test', true, () => of(true)).subscribe();
+	const sub = query(expect.getState().currentTestName, true, () =>
+		of(true),
+	).subscribe();
 
 	for await (const value of eachValueFrom(
 		query(
-			'test',
+			expect.getState().currentTestName,
 			interval(5).pipe(
 				take(3),
 				map((x) => x % 2 === 0),
@@ -160,7 +160,7 @@ it('groups cache continues to live until cacheTime resolves', async () => {
 
 	for await (const value of eachValueFrom(
 		query(
-			'test',
+			expect.getState().currentTestName,
 			interval(5).pipe(
 				take(3),
 				map((x) => x % 2 === 0),
@@ -197,7 +197,7 @@ it('groups clean up after last unsubscribe', async () => {
 
 	for await (const value of eachValueFrom(
 		query(
-			'test',
+			expect.getState().currentTestName,
 			interval(5).pipe(
 				take(3),
 				map((x) => x % 2 === 0),
@@ -233,7 +233,7 @@ it('ignores following params with same key', async () => {
 
 	for await (const value of eachValueFrom(
 		query(
-			'test',
+			expect.getState().currentTestName,
 			interval(5).pipe(
 				take(5),
 				map((_, i) => (i < 4 ? 'same' : 'other')),
@@ -257,7 +257,7 @@ it('can disable cache', async () => {
 	let success = 0;
 	for await (const value of eachValueFrom(
 		query(
-			'test',
+			expect.getState().currentTestName,
 			interval(5).pipe(
 				take(3),
 				map((x) => x % 2 === 0),
@@ -293,7 +293,7 @@ it('invokes query on refresh', async () => {
 	let i = 20;
 
 	for await (const value of eachValueFrom(
-		query('test', () => of(i++), {
+		query(expect.getState().currentTestName, () => of(i++), {
 			refetchInterval: 5,
 		}).pipe(takeWhile(() => i <= 24, true)),
 	)) {
@@ -352,7 +352,7 @@ it('invokes query on focus', async () => {
 	}, 10);
 
 	for await (const value of eachValueFrom(
-		query('test', () => of(i++), {
+		query(expect.getState().currentTestName, () => of(i++), {
 			refetchOnWindowFocus: true,
 		}).pipe(take(4)),
 	)) {
@@ -384,13 +384,13 @@ it('can disable refresh on data when data is still fresh', async () => {
 	let success = 0;
 
 	// keep true alive, to keep the true group alive
-	const sub = query('test', true, () => of(true), {
+	const sub = query(expect.getState().currentTestName, true, () => of(true), {
 		staleTime: Number.POSITIVE_INFINITY,
 	}).subscribe();
 
 	for await (const value of eachValueFrom(
 		query(
-			'test',
+			expect.getState().currentTestName,
 			interval(5).pipe(
 				take(3),
 				map((x) => x % 2 === 0),
@@ -420,14 +420,14 @@ it('can mutate data (allows partial mutations)', async () => {
 	const values = [];
 	setTimeout(() => {
 		revalidate.next({
-			key: 'test',
+			key: expect.getState().currentTestName,
 			data: { name: 'updated' },
 			trigger: 'mutate-success',
 			config: DEFAULT_QUERY_CONFIG,
 		});
 	}, 10);
 	for await (const value of eachValueFrom(
-		query('test', () =>
+		query(expect.getState().currentTestName, () =>
 			of({ name: 'initial', description: 'just a description' }),
 		).pipe(
 			takeWhile((x) => {
@@ -455,26 +455,26 @@ it('rollbacks when a mutation errors', async () => {
 	const values = [];
 	const events: Revalidator[] = [
 		{
-			key: 'test',
+			key: expect.getState().currentTestName,
 			data: 'new value',
 			trigger: 'mutate-optimistic',
 			config: DEFAULT_QUERY_CONFIG,
 		},
 		// 👇 gets ignored because we're in `mutating` state
 		{
-			key: 'test',
+			key: expect.getState().currentTestName,
 			trigger: 'interval',
 			config: DEFAULT_QUERY_CONFIG,
 		},
 		// 👇 gets ignored because we're in `mutating` state
 		{
-			key: 'test',
+			key: expect.getState().currentTestName,
 			data: 'new value 2',
 			trigger: 'mutate-optimistic',
 			config: DEFAULT_QUERY_CONFIG,
 		},
 		{
-			key: 'test',
+			key: expect.getState().currentTestName,
 			data: 'this is the error',
 			trigger: 'mutate-error',
 			config: DEFAULT_QUERY_CONFIG,
@@ -491,7 +491,7 @@ it('rollbacks when a mutation errors', async () => {
 	}, 10);
 
 	for await (const value of eachValueFrom(
-		query('test', () => of('initial')).pipe(
+		query(expect.getState().currentTestName, () => of('initial')).pipe(
 			takeWhile((x) => {
 				return x.error !== 'this is the error';
 			}, true),

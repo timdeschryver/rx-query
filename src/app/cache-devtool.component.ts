@@ -2,7 +2,7 @@ import { ChangeDetectorRef, Component } from '@angular/core';
 import { timer } from 'rxjs';
 import { map, mapTo, tap } from 'rxjs/operators';
 
-import { cache, revalidate } from '../../rx-query';
+import { queryCache, revalidate } from '../../rx-query';
 
 @Component({
 	selector: 'rx-query-devtool',
@@ -97,7 +97,7 @@ import { cache, revalidate } from '../../rx-query';
 	],
 })
 export class RxQueryDevToolComponent {
-	cache$ = cache.pipe(
+	cache$ = queryCache.pipe(
 		map((c) => {
 			return Object.entries(c).map(([key, value]) => {
 				return {
