@@ -47,6 +47,9 @@ export const queryCache = revalidate.pipe(
 											revalidate.next({ ...g, trigger: 'group-remove' });
 										}),
 									);
+								case 'reset-cache':
+									revalidate.next({ ...g, trigger: 'group-remove' });
+									return EMPTY;
 								default:
 									return EMPTY;
 							}
@@ -69,6 +72,9 @@ export const queryCache = revalidate.pipe(
 			unsubscribeOnNoSubscriptions(),
 			mergeScan(
 				({ groupState }, { revalidator, subscriptions }) => {
+					if (revalidator.trigger === 'reset-cache') {
+						return of({ groupState, trigger: revalidator.trigger });
+					}
 					const defaultHandlers = {
 						'query-subscribe': () =>
 							invokeQuery(groupState, revalidator, subscriptions, group),
@@ -150,7 +156,7 @@ export const queryCache = revalidate.pipe(
 								updateSubscriptions(groupState, revalidator, subscriptions),
 
 							// handle mutation results
-							'mutate-optimistic': () => updateTrigger(groupState, revalidator),
+							'mutate-optimistic': () => startMutation(groupState, revalidator),
 							'mutate-error': () => mutationRollback(groupState, revalidator),
 						},
 						'mutate-error': {
@@ -196,6 +202,10 @@ export const queryCache = revalidate.pipe(
 	}, {} as Cache),
 	shareReplay(1),
 );
+
+export function resetQueryCache(): void {
+	revalidate.next({ trigger: 'reset-cache' } as Revalidator);
+}
 
 /**
  * Updates cache for the current key
@@ -350,20 +360,10 @@ function startMutation(
 	revalidator: Revalidator<unknown, unknown>,
 ): Observable<Group> {
 	return guardAgainstUnknownState(groupState, () => {
-		if (!revalidator.data) {
-			console.warn(`[rx-query] Revalidator should have data`, {
-				key: revalidator.key,
-				trigger: revalidator.trigger,
-			});
-		}
-
 		const newResult: QueryOutput = {
 			...groupState.result,
-			data: (typeof revalidator.data === 'object'
-				? {
-						...groupState.result.data,
-						...revalidator.data,
-				  }
+			data: (typeof revalidator.data === 'function'
+				? revalidator.data(groupState.result.data)
 				: revalidator.data) as Readonly<unknown>,
 			status: 'mutating',
 		};
@@ -383,21 +383,14 @@ function mutationCommit(
 	revalidator: Revalidator<unknown, unknown>,
 ): Observable<Group> {
 	return guardAgainstUnknownState(groupState, () => {
-		if (!revalidator.data) {
-			console.warn(`[rx-query] Revalidator should have data`, {
-				key: revalidator.key,
-				trigger: revalidator.trigger,
-			});
-		}
-
 		const newResult: QueryOutput = {
 			...groupState.result,
-			data: (typeof revalidator.data === 'object'
-				? {
-						...groupState.result.data,
-						...revalidator.data,
-				  }
-				: revalidator.data) as Readonly<unknown>,
+			data:
+				revalidator.data === undefined
+					? groupState.result.data
+					: (((typeof revalidator.data === 'function'
+							? revalidator.data(groupState.result.data)
+							: revalidator.data) as Readonly<unknown>) as Readonly<unknown>),
 			status: 'success',
 		};
 
@@ -420,13 +413,6 @@ function mutationRollback(
 	revalidator: Revalidator<unknown, unknown>,
 ): Observable<Group> {
 	return guardAgainstUnknownState(groupState, () => {
-		if (!revalidator.data) {
-			console.warn(`[rx-query] Revalidator should have data`, {
-				key: revalidator.key,
-				trigger: revalidator.trigger,
-			});
-		}
-
 		const newResult: QueryOutput = {
 			...groupState.result,
 			data: groupState.originalResultData as Readonly<unknown>,

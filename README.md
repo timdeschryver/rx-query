@@ -2,10 +2,9 @@
 
 ## Why
 
-The User Interface of a page resembles the current state an application is in.
-This library requires you to think of all the states during a query (HTTP request).
-
-Besides this, `query` also handles **retries**, keeps a **cache**, and has some **refresh** methods built-in that can be toggled to fit multiple use cases.
+- a better user experience
+- ease of use
+- configurable
 
 ## Basics
 

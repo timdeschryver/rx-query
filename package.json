@@ -1,6 +1,6 @@
 {
 	"name": "rx-query",
-	"version": "0.0.8",
+	"version": "0.0.9",
 	"description": "rx-query",
 	"author": "Tim Deschryver",
 	"repository": {
@@ -14,7 +14,8 @@
 	"license": "MIT",
 	"keywords": [
 		"RxJS",
-		"Reactive"
+		"Reactive",
+		"State"
 	],
 	"main": "./dist/cjs/index.js",
 	"module": "./dist/esm/index.js",

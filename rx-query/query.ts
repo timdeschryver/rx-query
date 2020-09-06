@@ -30,8 +30,8 @@ import {
 } from 'rxjs/operators';
 import { revalidate, queryCache } from './cache';
 import { DEFAULT_QUERY_CONFIG } from './config';
-import { mutate, mutateError, mutateOptimistic } from './mutate';
-import { QueryOutput, QueryConfig, Revalidator } from './types';
+import { mutateSuccess, mutateError, mutateOptimistic } from './mutate';
+import { QueryOutput, QueryConfig, Revalidator, Mutator } from './types';
 
 export function query<QueryResult, QueryParam>(
 	key: string,
@@ -80,15 +80,18 @@ export function query(
 			);
 		};
 
-		const mutateQuery = (data: unknown) => {
-			const mutate$ = queryConfig.mutator(data, params);
+		const mutateQuery: Mutator = (
+			data: unknown,
+			updater?: (current: unknown) => unknown,
+		) => {
 			const cacheKey = queryKeyAndParamsToCacheKey(key, params);
+			const mutate$ = queryConfig.mutator(data, { params, cacheKey });
 			if (isObservable(mutate$)) {
 				mutate$
 					.pipe(
-						map((newData) => () => mutate(cacheKey, newData)),
+						map((newData) => () => mutateSuccess(cacheKey, newData)),
 						take(1),
-						startWith(() => mutateOptimistic(cacheKey, data)),
+						startWith(() => mutateOptimistic(cacheKey, updater || data)),
 					)
 					.subscribe({
 						next: (evt) => evt(),
@@ -97,7 +100,7 @@ export function query(
 				return;
 			}
 
-			mutate(cacheKey, mutate$);
+			mutateSuccess(cacheKey, mutate$);
 		};
 		const callResult$: Observable<QueryOutput> = defer(() =>
 			invoke(0).pipe(

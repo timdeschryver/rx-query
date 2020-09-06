@@ -1,6 +1,6 @@
 export { query } from './query';
-export { queryCache, revalidate } from './cache';
+export { queryCache, revalidate, resetQueryCache } from './cache';
 export { prefetch } from './prefetch';
-export { mutate } from './mutate';
+export { mutateSuccess, mutateError, mutateOptimistic } from './mutate';
 export { DEFAULT_QUERY_CONFIG } from './config';
-export { QueryOutput, QueryConfig, Revalidator } from './types';
+export { QueryOutput, QueryConfig, Revalidator, Mutator } from './types';

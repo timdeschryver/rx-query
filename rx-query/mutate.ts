@@ -1,7 +1,10 @@
 import { revalidate } from './cache';
 import { DEFAULT_QUERY_CONFIG } from './config';
 
-export function mutateOptimistic(key: string, data: unknown): void {
+export function mutateOptimistic<Result = unknown>(
+	key: string,
+	data: Result | ((current: Result) => Result),
+): void {
 	revalidate.next({
 		key,
 		data,
@@ -10,7 +13,10 @@ export function mutateOptimistic(key: string, data: unknown): void {
 	});
 }
 
-export function mutate(key: string, data: unknown): void {
+export function mutateSuccess<Result = unknown>(
+	key: string,
+	data?: Result | ((current: Result) => Result),
+): void {
 	revalidate.next({
 		key,
 		data,
@@ -19,10 +25,10 @@ export function mutate(key: string, data: unknown): void {
 	});
 }
 
-export function mutateError(key: string, data: unknown): void {
+export function mutateError(key: string, error: unknown): void {
 	revalidate.next({
 		key,
-		data,
+		data: error,
 		trigger: 'mutate-error',
 		config: DEFAULT_QUERY_CONFIG,
 	});

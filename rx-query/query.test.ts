@@ -2,12 +2,23 @@ import { interval, of, throwError } from 'rxjs';
 import { take, takeWhile, map } from 'rxjs/operators';
 import { eachValueFrom } from 'rxjs-for-await';
 import { fireEvent } from '@testing-library/dom';
-import { query, DEFAULT_QUERY_CONFIG, revalidate, QueryOutput, Revalidator } from '.';
+import {
+	query,
+	DEFAULT_QUERY_CONFIG,
+	revalidate,
+	QueryOutput,
+	Revalidator,
+	resetQueryCache,
+} from '.';
+
+beforeEach(() => {
+	resetQueryCache();
+});
 
 it('first loads then succeeds', async () => {
 	const values = [];
 	for await (const value of eachValueFrom(
-		query(expect.getState().currentTestName, () => of({ id: '3' })).pipe(
+		query('test', () => of({ id: '3' })).pipe(
 			takeWhile((x) => x.status !== 'success', true),
 		),
 	)) {
@@ -27,7 +38,7 @@ it('first loads then succeeds', async () => {
 it('retries then errors', async () => {
 	const values: any[] = [];
 	for await (const value of eachValueFrom(
-		query(expect.getState().currentTestName, () => throwError('Error')).pipe(
+		query('test', () => throwError('Error')).pipe(
 			takeWhile((x) => x.status !== 'error', true),
 		),
 	)) {
@@ -56,7 +67,7 @@ it('retries then errors', async () => {
 it('can override default error config with retries', async () => {
 	const values: any[] = [];
 	for await (const value of eachValueFrom(
-		query(expect.getState().currentTestName, () => throwError('Error'), {
+		query('test', () => throwError('Error'), {
 			retries: 1,
 			retryDelay: 1,
 		}).pipe(takeWhile((x) => x.status !== 'error', true)),
@@ -84,7 +95,7 @@ it('can override default error config with retries', async () => {
 it('can override default error config with custom retry', async () => {
 	const values: any[] = [];
 	for await (const value of eachValueFrom(
-		query(expect.getState().currentTestName, () => throwError('Error'), {
+		query('test', () => throwError('Error'), {
 			retries: (n, error) => {
 				expect(error).toBe('Error');
 				return n < 5;
@@ -117,13 +128,11 @@ it('retrieves data when params change and caches previous results', async () => 
 	let success = 0;
 
 	// keep true alive, to keep the true group alive
-	const sub = query(expect.getState().currentTestName, true, () =>
-		of(true),
-	).subscribe();
+	const sub = query('test', true, () => of(true)).subscribe();
 
 	for await (const value of eachValueFrom(
 		query(
-			expect.getState().currentTestName,
+			'test',
 			interval(5).pipe(
 				take(3),
 				map((x) => x % 2 === 0),
@@ -160,7 +169,7 @@ it('groups cache continues to live until cacheTime resolves', async () => {
 
 	for await (const value of eachValueFrom(
 		query(
-			expect.getState().currentTestName,
+			'test',
 			interval(5).pipe(
 				take(3),
 				map((x) => x % 2 === 0),
@@ -197,7 +206,7 @@ it('groups clean up after last unsubscribe', async () => {
 
 	for await (const value of eachValueFrom(
 		query(
-			expect.getState().currentTestName,
+			'test',
 			interval(5).pipe(
 				take(3),
 				map((x) => x % 2 === 0),
@@ -233,7 +242,7 @@ it('ignores following params with same key', async () => {
 
 	for await (const value of eachValueFrom(
 		query(
-			expect.getState().currentTestName,
+			'test',
 			interval(5).pipe(
 				take(5),
 				map((_, i) => (i < 4 ? 'same' : 'other')),
@@ -257,7 +266,7 @@ it('can disable cache', async () => {
 	let success = 0;
 	for await (const value of eachValueFrom(
 		query(
-			expect.getState().currentTestName,
+			'test',
 			interval(5).pipe(
 				take(3),
 				map((x) => x % 2 === 0),
@@ -293,7 +302,7 @@ it('invokes query on refresh', async () => {
 	let i = 20;
 
 	for await (const value of eachValueFrom(
-		query(expect.getState().currentTestName, () => of(i++), {
+		query('test', () => of(i++), {
 			refetchInterval: 5,
 		}).pipe(takeWhile(() => i <= 24, true)),
 	)) {
@@ -352,7 +361,7 @@ it('invokes query on focus', async () => {
 	}, 10);
 
 	for await (const value of eachValueFrom(
-		query(expect.getState().currentTestName, () => of(i++), {
+		query('test', () => of(i++), {
 			refetchOnWindowFocus: true,
 		}).pipe(take(4)),
 	)) {
@@ -384,13 +393,13 @@ it('can disable refresh on data when data is still fresh', async () => {
 	let success = 0;
 
 	// keep true alive, to keep the true group alive
-	const sub = query(expect.getState().currentTestName, true, () => of(true), {
+	const sub = query('test', true, () => of(true), {
 		staleTime: Number.POSITIVE_INFINITY,
 	}).subscribe();
 
 	for await (const value of eachValueFrom(
 		query(
-			expect.getState().currentTestName,
+			'test',
 			interval(5).pipe(
 				take(3),
 				map((x) => x % 2 === 0),
@@ -416,18 +425,53 @@ it('can disable refresh on data when data is still fresh', async () => {
 	sub.unsubscribe();
 });
 
-it('can mutate data (allows partial mutations)', async () => {
+it('can mutate data (data overwrite)', async () => {
 	const values = [];
 	setTimeout(() => {
 		revalidate.next({
-			key: expect.getState().currentTestName,
+			key: 'test',
 			data: { name: 'updated' },
 			trigger: 'mutate-success',
 			config: DEFAULT_QUERY_CONFIG,
 		});
 	}, 10);
 	for await (const value of eachValueFrom(
-		query(expect.getState().currentTestName, () =>
+		query('test', () =>
+			of({ name: 'initial', description: 'just a description' }),
+		).pipe(
+			takeWhile((x) => {
+				return x.data?.name !== 'updated';
+			}, true),
+		),
+	)) {
+		values.push(value);
+	}
+
+	expect(valuesWithoutMutate(values)).toEqual([
+		{ status: 'loading' },
+		{
+			status: 'success',
+			data: { name: 'initial', description: 'just a description' },
+		},
+		{
+			status: 'success',
+			data: { name: 'updated' },
+		},
+	]);
+});
+
+it('can mutate data (updator fn)', async () => {
+	const values = [];
+	setTimeout(() => {
+		revalidate.next({
+			key: 'test',
+			data: (current: any) => ({ ...current, name: 'updated' }),
+			trigger: 'mutate-success',
+			config: DEFAULT_QUERY_CONFIG,
+		});
+	}, 10);
+	for await (const value of eachValueFrom(
+		query('test', () =>
 			of({ name: 'initial', description: 'just a description' }),
 		).pipe(
 			takeWhile((x) => {
@@ -455,26 +499,25 @@ it('rollbacks when a mutation errors', async () => {
 	const values = [];
 	const events: Revalidator[] = [
 		{
-			key: expect.getState().currentTestName,
+			key: 'test',
 			data: 'new value',
 			trigger: 'mutate-optimistic',
 			config: DEFAULT_QUERY_CONFIG,
 		},
 		// 👇 gets ignored because we're in `mutating` state
 		{
-			key: expect.getState().currentTestName,
+			key: 'test',
 			trigger: 'interval',
 			config: DEFAULT_QUERY_CONFIG,
 		},
-		// 👇 gets ignored because we're in `mutating` state
 		{
-			key: expect.getState().currentTestName,
+			key: 'test',
 			data: 'new value 2',
 			trigger: 'mutate-optimistic',
 			config: DEFAULT_QUERY_CONFIG,
 		},
 		{
-			key: expect.getState().currentTestName,
+			key: 'test',
 			data: 'this is the error',
 			trigger: 'mutate-error',
 			config: DEFAULT_QUERY_CONFIG,
@@ -491,7 +534,7 @@ it('rollbacks when a mutation errors', async () => {
 	}, 10);
 
 	for await (const value of eachValueFrom(
-		query(expect.getState().currentTestName, () => of('initial')).pipe(
+		query('test', () => of('initial')).pipe(
 			takeWhile((x) => {
 				return x.error !== 'this is the error';
 			}, true),
@@ -504,7 +547,9 @@ it('rollbacks when a mutation errors', async () => {
 		{ status: 'loading' },
 		{ status: 'success', data: 'initial' },
 		{ status: 'mutating', data: 'new value' },
-		{ status: 'mutate-error', data: 'initial', error: 'this is the error' },
+		{ status: 'mutating', data: 'new value 2' },
+		// 👆 new value 2 is lost because it rollbacks, what to do about it?
+		{ status: 'mutate-error', data: 'new value', error: 'this is the error' },
 	]);
 });
 
