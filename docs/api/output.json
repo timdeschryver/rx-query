@@ -1,0 +1,403 @@
+[
+  {
+    "kind": "FunctionDeclaration",
+    "module": "rx-query",
+    "name": "query",
+    "overloads": [
+      {
+        "file": "rx-query/query.ts#L48-L184",
+        "signature": "function query(key: string, ...inputs: unknown[]): Observable<QueryOutput>;",
+        "info": [
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "key",
+              "description": "",
+              "type": "string"
+            }
+          ],
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "inputs",
+              "description": "",
+              "type": "unknown[]"
+            }
+          ]
+        ]
+      },
+      {
+        "file": "rx-query/query.ts#L36-L40",
+        "signature": "function query<QueryResult, QueryParam>(\n  key: string,\n  query: (params: QueryParam) => Observable<QueryResult>,\n  config?: QueryConfig<QueryResult, QueryParam>\n): Observable<QueryOutput<QueryResult>>;",
+        "info": [
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "key",
+              "description": "",
+              "type": "string"
+            }
+          ],
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "query",
+              "description": "",
+              "type": "(params: QueryParam) => Observable<QueryResult>"
+            }
+          ],
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "config",
+              "description": "",
+              "type": "QueryConfig<QueryResult, QueryParam>"
+            }
+          ]
+        ]
+      },
+      {
+        "file": "rx-query/query.ts#L41-L46",
+        "signature": "function query<QueryResult, QueryParam>(\n  key: string,\n  observableOrStaticParam: QueryParam | Observable<QueryParam>,\n  query: (params: QueryParam) => Observable<QueryResult>,\n  config?: QueryConfig<QueryResult, QueryParam>\n): Observable<QueryOutput<QueryResult>>;",
+        "info": [
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "key",
+              "description": "",
+              "type": "string"
+            }
+          ],
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "observableOrStaticParam",
+              "description": "",
+              "type": "QueryParam | Observable<QueryParam>"
+            }
+          ],
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "query",
+              "description": "",
+              "type": "(params: QueryParam) => Observable<QueryResult>"
+            }
+          ],
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "config",
+              "description": "",
+              "type": "QueryConfig<QueryResult, QueryParam>"
+            }
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "VariableDeclaration",
+    "module": "rx-query",
+    "name": "queryCache",
+    "overloads": [
+      {
+        "file": "rx-query/cache.ts#L30-L204",
+        "signature": "const queryCache: Observable<Cache>;",
+        "info": []
+      }
+    ]
+  },
+  {
+    "kind": "VariableDeclaration",
+    "module": "rx-query",
+    "name": "revalidate",
+    "overloads": [
+      {
+        "file": "rx-query/cache.ts#L28-L28",
+        "signature": "const revalidate: Subject<Revalidator<unknown, unknown>>;",
+        "info": []
+      }
+    ]
+  },
+  {
+    "kind": "FunctionDeclaration",
+    "module": "rx-query",
+    "name": "resetQueryCache",
+    "overloads": [
+      {
+        "file": "rx-query/cache.ts#L206-L208",
+        "signature": "function resetQueryCache(): void;",
+        "info": []
+      }
+    ]
+  },
+  {
+    "kind": "FunctionDeclaration",
+    "module": "rx-query",
+    "name": "prefetch",
+    "overloads": [
+      {
+        "file": "rx-query/prefetch.ts#L17-L27",
+        "signature": "function prefetch(key: string, ...inputs: unknown[]): void;",
+        "info": [
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "key",
+              "description": "",
+              "type": "string"
+            }
+          ],
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "inputs",
+              "description": "",
+              "type": "unknown[]"
+            }
+          ]
+        ]
+      },
+      {
+        "file": "rx-query/prefetch.ts#L6-L10",
+        "signature": "function prefetch<QueryParam, QueryResult>(\n  key: string,\n  query: (params: QueryParam) => Observable<QueryResult>,\n  config?: QueryConfig\n): void;",
+        "info": [
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "key",
+              "description": "",
+              "type": "string"
+            }
+          ],
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "query",
+              "description": "",
+              "type": "(params: QueryParam) => Observable<QueryResult>"
+            }
+          ],
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "config",
+              "description": "",
+              "type": "QueryConfig<unknown, unknown>"
+            }
+          ]
+        ]
+      },
+      {
+        "file": "rx-query/prefetch.ts#L11-L16",
+        "signature": "function prefetch<QueryParam, QueryResult>(\n  key: string,\n  observableOrStaticParam: QueryParam | Observable<QueryParam>,\n  query: (params: QueryParam) => Observable<QueryResult>,\n  config?: QueryConfig\n): void;",
+        "info": [
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "key",
+              "description": "",
+              "type": "string"
+            }
+          ],
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "observableOrStaticParam",
+              "description": "",
+              "type": "QueryParam | Observable<QueryParam>"
+            }
+          ],
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "query",
+              "description": "",
+              "type": "(params: QueryParam) => Observable<QueryResult>"
+            }
+          ],
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "config",
+              "description": "",
+              "type": "QueryConfig<unknown, unknown>"
+            }
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "FunctionDeclaration",
+    "module": "rx-query",
+    "name": "mutateSuccess",
+    "overloads": [
+      {
+        "file": "rx-query/mutate.ts#L16-L26",
+        "signature": "function mutateSuccess<Result = unknown>(\n  key: string,\n  data?: Result | ((current: Result) => Result)\n): void;",
+        "info": [
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "key",
+              "description": "",
+              "type": "string"
+            }
+          ],
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "data",
+              "description": "",
+              "type": "Result | ((current: Result) => Result)"
+            }
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "FunctionDeclaration",
+    "module": "rx-query",
+    "name": "mutateError",
+    "overloads": [
+      {
+        "file": "rx-query/mutate.ts#L28-L35",
+        "signature": "function mutateError(key: string, error: unknown): void;",
+        "info": [
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "key",
+              "description": "",
+              "type": "string"
+            }
+          ],
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "error",
+              "description": "",
+              "type": "unknown"
+            }
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "FunctionDeclaration",
+    "module": "rx-query",
+    "name": "mutateOptimistic",
+    "overloads": [
+      {
+        "file": "rx-query/mutate.ts#L4-L14",
+        "signature": "function mutateOptimistic<Result = unknown>(\n  key: string,\n  data: Result | ((current: Result) => Result)\n): void;",
+        "info": [
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "key",
+              "description": "",
+              "type": "string"
+            }
+          ],
+          [
+            "param",
+            {
+              "__kind": "table",
+              "label": "data",
+              "description": "",
+              "type": "Result | ((current: Result) => Result)"
+            }
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "VariableDeclaration",
+    "module": "rx-query",
+    "name": "DEFAULT_QUERY_CONFIG",
+    "overloads": [
+      {
+        "file": "rx-query/config.ts#L3-L11",
+        "signature": "const DEFAULT_QUERY_CONFIG: Required<QueryConfig<unknown, unknown>>;",
+        "info": []
+      }
+    ]
+  },
+  {
+    "kind": "TypeAliasDeclaration",
+    "module": "rx-query",
+    "name": "QueryOutput",
+    "overloads": [
+      {
+        "file": "rx-query/types.ts#L3-L17",
+        "signature": "export type QueryOutput<QueryResult = unknown> = {\n  status: Readonly<\n    | \"idle\"\n    | \"success\"\n    | \"error\"\n    | \"loading\"\n    | \"refreshing\"\n    | \"mutating\"\n    | \"mutate-error\"\n  >;\n  data?: Readonly<QueryResult>;\n  error?: Readonly<unknown>;\n  retries?: Readonly<number>;\n  mutate: Mutator<QueryResult>;\n};",
+        "info": []
+      }
+    ]
+  },
+  {
+    "kind": "TypeAliasDeclaration",
+    "module": "rx-query",
+    "name": "QueryConfig",
+    "overloads": [
+      {
+        "file": "rx-query/types.ts#L24-L74",
+        "signature": "export type QueryConfig<QueryResult = unknown, QueryParam = unknown> = {\n  /**\n   * How many times a query should be retried before ending up in the `error` state\n   *\n   * @default 3\n   */\n  retries?: number | ((retryAttempt: number, error: unknown) => boolean);\n  /**\n   * The delay between consecutive retries\n   *\n   * @default (n) => (n + 1) * 1000\n   */\n  retryDelay?: number | ((retryAttempt: number) => number);\n  /**\n   * The interval in milliseconds to fetch the query\n   *\n   * @default Number.MAX_VALUE\n   */\n  refetchInterval?: number | Observable<unknown>;\n  /**\n   * When `true` a fetch will be invoken when the window is refocused\n   *\n   * @default false\n   */\n  refetchOnWindowFocus?: boolean;\n  /**\n   * How long an item is \"fresh\" in milliseconds\n   * When an item is fresh, it won't get refetched\n   *\n   * @default 0\n   */\n  staleTime?: number;\n  /**\n   * How long an item remains in the cache (in milliseconds) when there are no subscribers\n   *\n   * @default 30_0000 (5 minutes)\n   */\n  cacheTime?: number;\n  /**\n   * A mutate function to update the cache\n   *\n   * @default  (data) => data\n   */\n  mutator?: (\n    data: QueryResult,\n    options: {\n      params: QueryParam;\n      cacheKey: string;\n    }\n  ) => QueryResult | Observable<QueryResult>;\n};",
+        "info": []
+      }
+    ]
+  },
+  {
+    "kind": "TypeAliasDeclaration",
+    "module": "rx-query",
+    "name": "Revalidator",
+    "overloads": [
+      {
+        "file": "rx-query/types.ts#L76-L97",
+        "signature": "export type Revalidator<QueryResult = unknown, QueryParam = unknown> = {\n  key: string;\n  trigger:\n    | \"query-subscribe\" // params change, subscribe to new group (key + params)\n    | \"query-unsubscribe\" // remove previous group\n    | \"interval\" // refresh after x ms\n    | \"focus\" // refresh after re-focus\n    | \"manual\" // manual refresh\n    | \"group-unsubscribe\" // all subscribers are unsubscribed for a group\n    | \"group-remove\" // remove the group after x ms after unsubscribe\n    | \"mutate-optimistic\" // mutate the data\n    | \"mutate-error\" // mutate the data\n    | \"mutate-success\" // mutate the data\n    | \"reset-cache\"; // reset the cache\n  config: Required<QueryConfig>;\n  params?: QueryParam;\n  query?: (\n    status: string,\n    params?: QueryParam\n  ) => Observable<QueryOutput<QueryResult>>;\n  data?: QueryResult;\n};",
+        "info": []
+      }
+    ]
+  },
+  {
+    "kind": "TypeAliasDeclaration",
+    "module": "rx-query",
+    "name": "Mutator",
+    "overloads": [
+      {
+        "file": "rx-query/types.ts#L19-L22",
+        "signature": "export type Mutator<QueryResult = unknown> = (\n  data: QueryResult,\n  updater?: (current: QueryResult) => QueryResult\n) => void;",
+        "info": []
+      }
+    ]
+  }
+]

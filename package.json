@@ -43,7 +43,8 @@
 		"postdist": "yarn test:types",
 		"storybook": "start-storybook -p 6006",
 		"build-storybook": "build-storybook",
-		"deploy-storybook": "storybook-to-ghpages"
+		"deploy-storybook": "storybook-to-ghpages",
+		"docs": "npx docs-md ./rx-query/index.ts"
 	},
 	"tsd": {
 		"directory": "rx-query",
