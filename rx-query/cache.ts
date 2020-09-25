@@ -200,7 +200,10 @@ export const queryCache = revalidate.pipe(
 	scan((_cache, { groupState, trigger }) => {
 		return updateCache(trigger, groupState, _cache);
 	}, {} as Cache),
-	shareReplay(1),
+	shareReplay({
+		refCount: false,
+		bufferSize: 1,
+	}),
 );
 
 export function resetQueryCache(): void {

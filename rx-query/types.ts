@@ -60,6 +60,12 @@ export type QueryConfig<QueryResult = unknown, QueryParam = unknown> = {
 	 */
 	cacheTime?: number;
 	/**
+	 * Return the latest result
+	 *
+	 * @default false
+	 */
+	keepPreviousData?: boolean;
+	/**
 	 * A mutate function to update the cache
 	 *
 	 * @default  (data) => data

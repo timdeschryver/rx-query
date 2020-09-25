@@ -163,6 +163,62 @@ it('retrieves data when params change and caches previous results', async () => 
 	sub.unsubscribe();
 });
 
+it('keepPreviousData uses previous data until it receives new data', async () => {
+	const values = [];
+
+	for await (const value of eachValueFrom(
+		query(
+			'test',
+			interval(5).pipe(takeWhile((x) => x <= 3)),
+			(bool) => of(bool),
+			{
+				keepPreviousData: true,
+			},
+		).pipe(
+			takeWhile((x) => {
+				return x.data !== 3;
+			}, true),
+		),
+	)) {
+		values.push(value);
+	}
+
+	expect(valuesWithoutMutate(values)).toEqual([
+		{ status: 'loading' },
+		{ status: 'success', data: 0 },
+		// while 1 is loading use previous data and set status as refreshing
+		{
+			data: 0,
+			status: 'refreshing',
+		},
+		// 1 receievs a response
+		{
+			data: 1,
+			status: 'success',
+		},
+		// while 2 is loading use previous data and set status as refreshing
+		{
+			data: 1,
+			status: 'refreshing',
+		},
+		// 2 receievs a response
+		{
+			data: 2,
+			status: 'success',
+		},
+		// while 3 is loading use previous data and set status as refreshing
+		{
+			data: 2,
+			status: 'refreshing',
+		},
+		// 3 receievs a response
+		{
+			data: 3,
+			status: 'success',
+		},
+	]);
+});
+
 it('groups cache continues to live until cacheTime resolves', async () => {
 	const values = [];
 	let success = 0;

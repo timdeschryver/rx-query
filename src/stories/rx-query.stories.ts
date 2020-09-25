@@ -11,6 +11,7 @@ import { ErrorComponent } from '../examples/error.component';
 import { TypeAheadComponent } from '../examples/typeahead.component';
 import { PrefetchComponent } from '../examples/prefetch.component';
 import { MutateComponent } from '../examples/mutate.component';
+import { PaginationComponent } from '../examples/pagination.component';
 
 export default {
 	title: 'rx-query',
@@ -84,4 +85,12 @@ export const Mutate = () => ({
 
 Mutate.story = {
 	name: 'Mutate',
+};
+
+export const Pagination = () => ({
+	component: PaginationComponent,
+});
+
+Pagination.story = {
+	name: 'Pagination',
 };

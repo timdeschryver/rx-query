@@ -25,7 +25,6 @@ import {
 	take,
 	pairwise,
 	concatMap,
-	share,
 	shareReplay,
 } from 'rxjs/operators';
 import { revalidate, queryCache } from './cache';
@@ -169,6 +168,7 @@ export function query(
 			),
 			map((v) => v.groupState.result as QueryOutput),
 			distinctUntilChanged(),
+			patchDataWithPreviousData(queryConfig.keepPreviousData),
 			finalize(() => {
 				params$.pipe(take(1)).subscribe((params) => {
 					revalidate.next({
@@ -324,6 +324,33 @@ function queryKeyAndParamsToCacheKey(key: string, params: unknown) {
 	}
 
 	return key;
+}
+
+function patchDataWithPreviousData(keepPreviousData: boolean) {
+	let data: any;
+	return (
+		source: Observable<QueryOutput<unknown>>,
+	): Observable<QueryOutput<unknown>> => {
+		if (!keepPreviousData) return source;
+		return source.pipe(
+			map((value) => {
+				if (
+					data !== undefined &&
+					value.data === undefined &&
+					value.status === 'loading'
+				) {
+					return {
+						...value,
+						data,
+						status: 'refreshing',
+					};
+				}
+
+				data = value.data;
+				return value;
+			}),
+		);
+	};
 }
 
 type QueryInvoker = (

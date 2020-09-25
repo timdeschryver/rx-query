@@ -8,4 +8,5 @@ export const DEFAULT_QUERY_CONFIG: Required<QueryConfig> = {
 	staleTime: 0,
 	cacheTime: 30_0000, // 5 minutes
 	mutator: (data) => data,
+	keepPreviousData: false,
 };
