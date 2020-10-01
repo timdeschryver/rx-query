@@ -29,9 +29,9 @@ import {
 } from 'rxjs/operators';
 import { revalidate, queryCache } from './cache';
 import { DEFAULT_QUERY_CONFIG } from './config';
+import { createQueryKey } from './key';
 import { mutateSuccess, mutateError, mutateOptimistic } from './mutate';
 import { QueryOutput, QueryConfig, Revalidator, Mutator } from './types';
-
 export function query<QueryResult, QueryParam>(
 	key: string,
 	query: (params: QueryParam) => Observable<QueryResult>,
@@ -83,7 +83,7 @@ export function query(
 			data: unknown,
 			updater?: (current: unknown) => unknown,
 		) => {
-			const cacheKey = queryKeyAndParamsToCacheKey(key, params);
+			const cacheKey = createQueryKey(key, params);
 			const mutate$ = queryConfig.mutator(data, { params, cacheKey });
 			if (isObservable(mutate$)) {
 				mutate$
@@ -209,7 +209,7 @@ function paramsTrigger(
 			const revalidates = [];
 			if (previous !== undefined) {
 				const unsubscribe: Revalidator = {
-					key: queryKeyAndParamsToCacheKey(key, previous),
+					key: createQueryKey(key, previous),
 					query: invokeQuery,
 					trigger: 'query-unsubscribe',
 					params: previous,
@@ -219,7 +219,7 @@ function paramsTrigger(
 			}
 
 			const init: Revalidator = {
-				key: queryKeyAndParamsToCacheKey(key, params),
+				key: createQueryKey(key, params),
 				query: invokeQuery,
 				trigger: 'query-subscribe',
 				params,
@@ -246,7 +246,7 @@ function intervalTrigger(
 				withLatestFrom(queryParam),
 				map(([_, params]) => {
 					const interval: Revalidator = {
-						key: queryKeyAndParamsToCacheKey(key, params),
+						key: createQueryKey(key, params),
 						query: invokeQuery,
 						trigger: 'interval',
 						params,
@@ -269,7 +269,7 @@ function focusTrigger(
 				withLatestFrom(queryParam),
 				map(([_, params]) => {
 					const focused: Revalidator = {
-						key: queryKeyAndParamsToCacheKey(key, params),
+						key: createQueryKey(key, params),
 						query: invokeQuery,
 						trigger: 'focus',
 						params,
@@ -310,20 +310,6 @@ function parseInput(inputs: unknown[]) {
 		queryParam,
 		queryConfig,
 	};
-}
-
-function queryKeyAndParamsToCacheKey(key: string, params: unknown) {
-	if (params !== undefined && params !== null) {
-		return (
-			key +
-			'-' +
-			(['string', 'number'].includes(typeof params)
-				? params
-				: JSON.stringify(params))
-		);
-	}
-
-	return key;
 }
 
 function patchDataWithPreviousData(keepPreviousData: boolean) {
