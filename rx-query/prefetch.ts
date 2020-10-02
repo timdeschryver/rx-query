@@ -1,5 +1,5 @@
 import { Observable, of, isObservable } from 'rxjs';
-import { take, mergeMap } from 'rxjs/operators';
+import { take, mergeMap, shareReplay } from 'rxjs/operators';
 import { query } from './query';
 import { QueryConfig } from './types';
 
@@ -47,7 +47,7 @@ function parseInput(inputs: unknown[]) {
 
 	return {
 		query,
-		queryParam,
+		queryParam: queryParam.pipe(shareReplay(1)),
 		queryConfig: inputConfig,
 	};
 }
