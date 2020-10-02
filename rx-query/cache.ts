@@ -23,7 +23,7 @@ import {
 	concatAll,
 	shareReplay,
 } from 'rxjs/operators';
-import { QueryOutput, Revalidator } from './types';
+import { QueryConfig, QueryOutput, Revalidator } from './types';
 
 export const revalidate = new Subject<Revalidator>();
 
@@ -72,28 +72,71 @@ export const queryCache = revalidate.pipe(
 			unsubscribeOnNoSubscriptions(),
 			mergeScan(
 				({ groupState }, { revalidator, subscriptions }) => {
+					const queryConfig = {
+						...groupState.queryConfig,
+						...revalidator.config,
+					};
+
 					if (revalidator.trigger === 'reset-cache') {
 						return of({ groupState, trigger: revalidator.trigger });
 					}
 					const defaultHandlers = {
 						'query-subscribe': () =>
-							invokeQuery(groupState, revalidator, subscriptions, group),
+							invokeQuery(
+								groupState,
+								revalidator,
+								queryConfig,
+								subscriptions,
+								group,
+							),
 						focus: () =>
-							invokeQuery(groupState, revalidator, subscriptions, group),
+							invokeQuery(
+								groupState,
+								revalidator,
+								queryConfig,
+								subscriptions,
+								group,
+							),
 						interval: () =>
-							invokeQuery(groupState, revalidator, subscriptions, group),
+							invokeQuery(
+								groupState,
+								revalidator,
+								queryConfig,
+								subscriptions,
+								group,
+							),
 						manual: () =>
-							invokeQuery(groupState, revalidator, subscriptions, group),
+							invokeQuery(
+								groupState,
+								revalidator,
+								queryConfig,
+								subscriptions,
+								group,
+							),
 
-						'group-unsubscribe': () => updateTrigger(groupState, revalidator),
+						'group-unsubscribe': () =>
+							updateTrigger(groupState, revalidator, queryConfig),
 						'query-unsubscribe': () =>
-							updateSubscriptions(groupState, revalidator, subscriptions),
+							updateSubscriptions(
+								groupState,
+								revalidator,
+								queryConfig,
+								subscriptions,
+							),
 						'group-remove': () =>
-							updateSubscriptions(groupState, revalidator, subscriptions),
+							updateSubscriptions(
+								groupState,
+								revalidator,
+								queryConfig,
+								subscriptions,
+							),
 
-						'mutate-optimistic': () => startMutation(groupState, revalidator),
-						'mutate-success': () => mutationCommit(groupState, revalidator),
-						'mutate-error': () => updateTrigger(groupState, revalidator),
+						'mutate-optimistic': () =>
+							startMutation(groupState, revalidator, queryConfig),
+						'mutate-success': () =>
+							mutationCommit(groupState, revalidator, queryConfig),
+						'mutate-error': () =>
+							updateTrigger(groupState, revalidator, queryConfig),
 					} as {
 						[handler in Revalidator['trigger']]: () => Observable<Group>;
 					};
@@ -113,51 +156,113 @@ export const queryCache = revalidate.pipe(
 
 							// reset the status to allow a resubscription later
 							'group-unsubscribe': () =>
-								resetGroupStatus(groupState, revalidator),
+								resetGroupStatus(groupState, revalidator, queryConfig),
 
 							// a query is already pending, when it resolves all queries will be updated
 							'query-subscribe': () =>
-								updateSubscriptions(groupState, revalidator, subscriptions),
+								updateSubscriptions(
+									groupState,
+									revalidator,
+									queryConfig,
+									subscriptions,
+								),
 							interval: () =>
-								updateSubscriptions(groupState, revalidator, subscriptions),
+								updateSubscriptions(
+									groupState,
+									revalidator,
+									queryConfig,
+									subscriptions,
+								),
 							focus: () =>
-								updateSubscriptions(groupState, revalidator, subscriptions),
+								updateSubscriptions(
+									groupState,
+									revalidator,
+									queryConfig,
+									subscriptions,
+								),
 							manual: () =>
-								updateSubscriptions(groupState, revalidator, subscriptions),
+								updateSubscriptions(
+									groupState,
+									revalidator,
+									queryConfig,
+									subscriptions,
+								),
 						},
 						refreshing: {
 							...defaultHandlers,
 
 							// reset the status to allow a resubscription later
 							'group-unsubscribe': () =>
-								resetGroupStatus(groupState, revalidator),
+								resetGroupStatus(groupState, revalidator, queryConfig),
 
 							// a query is already pending, when it resolves all queries will be updated
 							'query-subscribe': () =>
-								updateSubscriptions(groupState, revalidator, subscriptions),
+								updateSubscriptions(
+									groupState,
+									revalidator,
+									queryConfig,
+									subscriptions,
+								),
 							interval: () =>
-								updateSubscriptions(groupState, revalidator, subscriptions),
+								updateSubscriptions(
+									groupState,
+									revalidator,
+									queryConfig,
+									subscriptions,
+								),
 							focus: () =>
-								updateSubscriptions(groupState, revalidator, subscriptions),
+								updateSubscriptions(
+									groupState,
+									revalidator,
+									queryConfig,
+									subscriptions,
+								),
 							manual: () =>
-								updateSubscriptions(groupState, revalidator, subscriptions),
+								updateSubscriptions(
+									groupState,
+									revalidator,
+									queryConfig,
+									subscriptions,
+								),
 						},
 						mutating: {
 							...defaultHandlers,
 
 							// ignore refreshes while mutating until the mutation resolves
 							'query-subscribe': () =>
-								updateSubscriptions(groupState, revalidator, subscriptions),
+								updateSubscriptions(
+									groupState,
+									revalidator,
+									queryConfig,
+									subscriptions,
+								),
 							interval: () =>
-								updateSubscriptions(groupState, revalidator, subscriptions),
+								updateSubscriptions(
+									groupState,
+									revalidator,
+									queryConfig,
+									subscriptions,
+								),
 							focus: () =>
-								updateSubscriptions(groupState, revalidator, subscriptions),
+								updateSubscriptions(
+									groupState,
+									revalidator,
+									queryConfig,
+									subscriptions,
+								),
 							manual: () =>
-								updateSubscriptions(groupState, revalidator, subscriptions),
+								updateSubscriptions(
+									groupState,
+									revalidator,
+									queryConfig,
+									subscriptions,
+								),
 
 							// handle mutation results
-							'mutate-optimistic': () => startMutation(groupState, revalidator),
-							'mutate-error': () => mutationRollback(groupState, revalidator),
+							'mutate-optimistic': () =>
+								startMutation(groupState, revalidator, queryConfig),
+							'mutate-error': () =>
+								mutationRollback(groupState, revalidator, queryConfig),
 						},
 						'mutate-error': {
 							...defaultHandlers,
@@ -176,7 +281,7 @@ export const queryCache = revalidate.pipe(
 							current: groupState.result.status,
 							event: revalidator.trigger,
 						});
-						return updateTrigger(groupState, revalidator);
+						return updateTrigger(groupState, revalidator, queryConfig);
 					}
 
 					return handler();
@@ -186,6 +291,7 @@ export const queryCache = revalidate.pipe(
 						key: '__rx-query-unknown',
 						staleAt: undefined,
 						subscriptions: 0,
+						queryConfig: undefined,
 						result: {
 							status: 'idle',
 						},
@@ -267,6 +373,7 @@ function updateCache(
 function invokeQuery(
 	groupState: GroupState,
 	revalidator: Revalidator<unknown, unknown>,
+	queryConfig: Required<QueryConfig>,
 	subscriptions: number,
 	group: GroupedObservable<string, Revalidator<unknown, unknown>>,
 ): Observable<Group> {
@@ -278,6 +385,7 @@ function invokeQuery(
 	) {
 		const cached: GroupState = {
 			...groupState,
+			queryConfig,
 			subscriptions,
 			result: {
 				...groupState.result,
@@ -317,13 +425,14 @@ function invokeQuery(
 				return {
 					key: revalidator.key,
 					result: queryResult,
+					queryConfig,
 					staleAt:
 						queryResult.status === 'success'
-							? now + revalidator.config.staleTime
+							? now + queryConfig.staleTime
 							: undefined,
 					removeCacheAt:
 						queryResult.status === 'success'
-							? now + revalidator.config.cacheTime
+							? now + queryConfig.cacheTime
 							: undefined,
 					originalResultData: undefined,
 					// ignore subscriptions, query could already be unsubscribed and this will re-create a subscription because this subscription is outdate
@@ -335,6 +444,7 @@ function invokeQuery(
 
 	const initial: GroupState = {
 		key: revalidator.key,
+		queryConfig,
 		result: {
 			status: intialState,
 			...(hasCache ? { data: groupState.result.data } : {}),
@@ -361,6 +471,7 @@ function invokeQuery(
 function startMutation(
 	groupState: GroupState,
 	revalidator: Revalidator<unknown, unknown>,
+	queryConfig: QueryConfig,
 ): Observable<Group> {
 	return guardAgainstUnknownState(groupState, () => {
 		const newResult: QueryOutput = {
@@ -373,6 +484,7 @@ function startMutation(
 		return of({
 			groupState: {
 				...groupState,
+				queryConfig,
 				result: newResult,
 				originalResultData: groupState.result.data,
 			},
@@ -384,6 +496,7 @@ function startMutation(
 function mutationCommit(
 	groupState: GroupState,
 	revalidator: Revalidator<unknown, unknown>,
+	queryConfig: QueryConfig,
 ): Observable<Group> {
 	return guardAgainstUnknownState(groupState, () => {
 		const newResult: QueryOutput = {
@@ -400,6 +513,7 @@ function mutationCommit(
 		return of({
 			groupState: {
 				...groupState,
+				queryConfig,
 				result: newResult,
 				originalResultData: undefined,
 			},
@@ -414,6 +528,7 @@ function mutationCommit(
 function mutationRollback(
 	groupState: GroupState,
 	revalidator: Revalidator<unknown, unknown>,
+	queryConfig: QueryConfig,
 ): Observable<Group> {
 	return guardAgainstUnknownState(groupState, () => {
 		const newResult: QueryOutput = {
@@ -426,6 +541,7 @@ function mutationRollback(
 		return of({
 			groupState: {
 				...groupState,
+				queryConfig,
 				result: newResult,
 			},
 			trigger: revalidator.trigger,
@@ -495,16 +611,18 @@ function unsubscribeOnNoSubscriptions() {
 function updateSubscriptions(
 	groupState: GroupState,
 	revalidator: Revalidator,
+	queryConfig: QueryConfig,
 	subscriptions: number,
 ): Observable<Group> {
 	return guardAgainstUnknownState(groupState, () => {
 		if (groupState.subscriptions === subscriptions) {
-			return updateTrigger(groupState, revalidator);
+			return updateTrigger(groupState, revalidator, queryConfig);
 		}
 
 		return of({
 			groupState: {
 				...groupState,
+				queryConfig,
 				subscriptions,
 			},
 			trigger: revalidator.trigger,
@@ -518,11 +636,13 @@ function updateSubscriptions(
 function resetGroupStatus(
 	groupState: GroupState,
 	revalidator: Revalidator,
+	queryConfig: QueryConfig,
 ): Observable<Group> {
 	return guardAgainstUnknownState(groupState, () => {
 		return of({
 			groupState: {
 				...groupState,
+				queryConfig,
 				result: {
 					...groupState.result,
 					status: 'idle',
@@ -539,10 +659,12 @@ function resetGroupStatus(
 function updateTrigger(
 	groupState: GroupState,
 	revalidator: Revalidator,
+	queryConfig: QueryConfig,
 ): Observable<Group> {
 	return guardAgainstUnknownState(groupState, () => {
 		return of({
 			groupState,
+			queryConfig,
 			trigger: revalidator.trigger,
 		});
 	});
@@ -570,6 +692,7 @@ type GroupSubscription = {
 
 type GroupState = {
 	key: string;
+	queryConfig?: QueryConfig;
 	originalResultData?: unknown;
 	result: QueryOutput;
 	staleAt?: number;

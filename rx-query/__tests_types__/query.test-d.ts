@@ -1,6 +1,6 @@
 import { expectType } from 'tsd';
 import { Observable, of } from 'rxjs';
-import { query, QueryOutput } from '.';
+import { query, QueryOutput } from '..';
 
 /**
  * Default

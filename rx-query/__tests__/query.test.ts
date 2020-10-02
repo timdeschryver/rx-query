@@ -9,7 +9,8 @@ import {
 	QueryOutput,
 	Revalidator,
 	resetQueryCache,
-} from '.';
+	refreshQuery,
+} from '..';
 
 beforeEach(() => {
 	resetQueryCache();
@@ -479,6 +480,60 @@ it('can disable refresh on data when data is still fresh', async () => {
 	]);
 
 	sub.unsubscribe();
+});
+
+it('can refresh on demand', async () => {
+	const values = [];
+	let i = 20;
+
+	for await (const value of eachValueFrom(
+		query('test', () => of(i++)).pipe(takeWhile(() => i <= 24, true)),
+	)) {
+		refreshQuery('test');
+		values.push(value);
+	}
+
+	expect(valuesWithoutMutate(values)).toEqual([
+		{
+			status: 'loading',
+		},
+		{
+			status: 'success',
+			data: 20,
+		},
+		{
+			status: 'refreshing',
+			data: 20,
+		},
+		{
+			status: 'success',
+			data: 21,
+		},
+		{
+			status: 'refreshing',
+			data: 21,
+		},
+		{
+			status: 'success',
+			data: 22,
+		},
+		{
+			status: 'refreshing',
+			data: 22,
+		},
+		{
+			status: 'success',
+			data: 23,
+		},
+		{
+			status: 'refreshing',
+			data: 23,
+		},
+		{
+			status: 'success',
+			data: 24,
+		},
+	]);
 });
 
 it('can mutate data (data overwrite)', async () => {
