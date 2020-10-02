@@ -307,7 +307,7 @@ function parseInput(inputs: unknown[]) {
 
 	return {
 		query,
-		queryParam,
+		queryParam: queryParam.pipe(shareReplay(1)),
 		queryConfig,
 	};
 }
