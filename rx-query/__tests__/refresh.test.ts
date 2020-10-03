@@ -1,6 +1,6 @@
-import { refreshQuery, revalidate, queryCache } from '..';
+import { refreshQuery, revalidate } from '..';
 
-it('sends emits a refresh event', (done) => {
+it('sends a refresh event', (done) => {
 	revalidate.subscribe({
 		next: (value) => {
 			expect(value.trigger).toBe('manual');

@@ -47,7 +47,12 @@ function parseInput(inputs: unknown[]) {
 
 	return {
 		query,
-		queryParam: queryParam.pipe(shareReplay(1)),
+		queryParam: queryParam.pipe(
+			shareReplay({
+				refCount: true,
+				bufferSize: 1,
+			}),
+		),
 		queryConfig: inputConfig,
 	};
 }
