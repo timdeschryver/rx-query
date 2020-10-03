@@ -25,9 +25,24 @@ import {
 } from 'rxjs/operators';
 import { QueryConfig, QueryOutput, Revalidator } from './types';
 
+let cacheKeys: string[] = [];
 export const revalidate = new Subject<Revalidator>();
 
 export const queryCache = revalidate.pipe(
+	tap((r) => {
+		if (r.key && r.trigger === 'group-remove') {
+			cacheKeys = cacheKeys.filter((key) => key !== r.key);
+		} else if (r.key) {
+			if (!cacheKeys.includes(r.key)) {
+				cacheKeys.push(r.key);
+			}
+		} else if (r.trigger === 'reset-cache') {
+			cacheKeys.forEach((key) =>
+				revalidate.next({ key, trigger: 'group-remove' } as Revalidator),
+			);
+		}
+	}),
+	filter((r) => r.key !== undefined),
 	groupBy(
 		(r) => r.key,
 		(r) => r,
@@ -35,21 +50,35 @@ export const queryCache = revalidate.pipe(
 			group.pipe(
 				takeUntil(
 					group.pipe(
+						scan((acc, revalidator) => {
+							if (acc.initialConfig === undefined) {
+								return {
+									initialConfig: revalidator.config,
+									revalidator,
+								};
+							}
+							return { ...acc, revalidator };
+						}, {} as { initialConfig: QueryConfig; revalidator: Revalidator<unknown, unknown> }),
 						switchMap((g) => {
-							switch (g.trigger) {
+							switch (g.revalidator.trigger) {
 								case 'group-remove':
-									return of(g);
+									return of(g.revalidator);
 								case 'group-unsubscribe':
 									// cleanup the group when the whole group is unsubscribed,
 									// after x milliseconds. This gives us a new cache for the group.
-									return timer(g.config.cacheTime).pipe(
+									const cacheTime =
+										g.revalidator.config?.cacheTime ??
+										g.initialConfig?.cacheTime ??
+										0;
+
+									return timer(cacheTime).pipe(
 										tap(() => {
-											revalidate.next({ ...g, trigger: 'group-remove' });
+											revalidate.next({
+												...g.revalidator,
+												trigger: 'group-remove',
+											});
 										}),
 									);
-								case 'reset-cache':
-									revalidate.next({ ...g, trigger: 'group-remove' });
-									return EMPTY;
 								default:
 									return EMPTY;
 							}
@@ -77,9 +106,6 @@ export const queryCache = revalidate.pipe(
 						...revalidator.config,
 					};
 
-					if (revalidator.trigger === 'reset-cache') {
-						return of({ groupState, trigger: revalidator.trigger });
-					}
 					const defaultHandlers = {
 						'query-subscribe': () =>
 							invokeQuery(

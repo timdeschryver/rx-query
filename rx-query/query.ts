@@ -170,11 +170,13 @@ export function query(
 			distinctUntilChanged(),
 			patchDataWithPreviousData(queryConfig.keepPreviousData),
 			finalize(() => {
-				params$.pipe(take(1)).subscribe((params) => {
-					revalidate.next({
-						...params,
-						trigger: 'query-unsubscribe',
-					});
+				params$.pipe(take(1)).subscribe({
+					next: (params) => {
+						revalidate.next({
+							...params,
+							trigger: 'query-unsubscribe',
+						});
+					},
 				});
 
 				triggersSubscription.unsubscribe();
@@ -228,7 +230,6 @@ function paramsTrigger(
 			revalidates.push(init);
 			return revalidates;
 		}),
-		shareReplay(),
 	);
 }
 
@@ -307,7 +308,12 @@ function parseInput(inputs: unknown[]) {
 
 	return {
 		query,
-		queryParam: queryParam.pipe(shareReplay(1)),
+		queryParam: queryParam.pipe(
+			shareReplay({
+				refCount: true,
+				bufferSize: 1,
+			}),
+		),
 		queryConfig,
 	};
 }
