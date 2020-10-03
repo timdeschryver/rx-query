@@ -19,7 +19,7 @@ import { query } from "rx-query";
 characters$ = query(() => this.rickAndMortyService.getCharacters());
 ```
 
-### Query without static parameter
+### Query with static parameter
 
 A query that has a static parameter (a value that doesn't change over time), can be written in the same way as a query without parameters.
 
