@@ -90,8 +90,8 @@ In the view layer you will often see a structure like this, with a segment to re
 ### Refresh a query
 
 Use `refreshQuery` to trigger a new fetch from a previously contructed query.  
-The following will refetch the data and update the cache.  
 Not that the key _and_ parameters provided to `refreshQuery` should be exactly the same! 
+The following will refetch the data and update the cache.  
 
 ```ts
 import { query, refreshQuery } from "rx-query";
