@@ -87,6 +87,21 @@ In the view layer you will often see a structure like this, with a segment to re
 </ng-container>
 ```
 
+### Refresh a query
+
+Use `refreshQuery` to trigger a new fetch from a previously contructed query.  
+The following will refetch the data and update the cache.  
+Not that the key _and_ parameters provided to `refreshQuery` should be exactly the same! 
+
+```ts
+import { query, refreshQuery } from "rx-query";
+
+characters$ = query("characters", () => this.rickAndMortyService.getCharacter(1));
+
+// On some event
+refreshQuery("characters", 1);
+```
+
 ## Output
 
 ```ts
