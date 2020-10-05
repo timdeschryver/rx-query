@@ -19,7 +19,7 @@ import { query } from "rx-query";
 characters$ = query(() => this.rickAndMortyService.getCharacters());
 ```
 
-### Query without static parameter
+### Query with static parameter
 
 A query that has a static parameter (a value that doesn't change over time), can be written in the same way as a query without parameters.
 
@@ -85,6 +85,21 @@ In the view layer you will often see a structure like this, with a segment to re
 		</div>
 	</ng-container>
 </ng-container>
+```
+
+### Refresh a query
+
+Use `refreshQuery` to trigger a new fetch from a previously contructed query.  
+Note that the key _and_ parameters provided to `refreshQuery` should be exactly the same! 
+The following will refetch the data and update the cache.  
+
+```ts
+import { query, refreshQuery } from "rx-query";
+
+characters$ = query("characters", 1, (id) => this.rickAndMortyService.getCharacter(id));
+
+// On some event
+refreshQuery("characters", 1);
 ```
 
 ## Output
