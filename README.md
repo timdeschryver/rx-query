@@ -96,7 +96,7 @@ The following will refetch the data and update the cache.
 ```ts
 import { query, refreshQuery } from "rx-query";
 
-characters$ = query("characters", () => this.rickAndMortyService.getCharacter(1));
+characters$ = query("characters", 1, (id) => this.rickAndMortyService.getCharacter(id));
 
 // On some event
 refreshQuery("characters", 1);
