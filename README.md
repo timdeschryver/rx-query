@@ -5,6 +5,7 @@
 - a better user experience
 - ease of use
 - configurable
+- promotes [Push-based Architecture](https://medium.com/@thomasburlesonIA/push-based-architectures-with-rxjs-81b327d7c32d)
 
 ## Basics
 
@@ -16,7 +17,9 @@ The `query` method expects a callback method to invoke the query.
 ```ts
 import { query } from "rx-query";
 
-characters$ = query(() => this.rickAndMortyService.getCharacters());
+characters$ = query("characters", () =>
+	this.rickAndMortyService.getCharacters(),
+);
 ```
 
 ### Query with static parameter
@@ -26,7 +29,9 @@ A query that has a static parameter (a value that doesn't change over time), can
 ```ts
 import { query } from "rx-query";
 
-characters$ = query(() => this.rickAndMortyService.getCharacter(1));
+characters$ = query("character", () =>
+	this.rickAndMortyService.getCharacter(1),
+);
 ```
 
 An alternative way if to pass the static parameter as the first argument.
@@ -35,7 +40,7 @@ The query callback will then be invoked with the passed parameter.
 ```ts
 import { query } from "rx-query";
 
-characters$ = query(1, (characterId) =>
+characters$ = query("character", 1, (characterId) =>
 	this.rickAndMortyService.getCharacter(characterId),
 );
 ```
@@ -47,6 +52,7 @@ When the input Observable emits a new value, the callback query will be invoked 
 
 ```ts
 character$ = query(
+	"character",
 	this.activatedRoute.params.pipe(map((p) => p.characterId)),
 	(characterId: number) => this.rickAndMortyService.getCharacter(characterId),
 );
@@ -90,16 +96,18 @@ In the view layer you will often see a structure like this, with a segment to re
 ### Refresh a query
 
 Use `refreshQuery` to trigger a new fetch from a previously contructed query.  
-Note that the key _and_ parameters provided to `refreshQuery` should be exactly the same! 
-The following will refetch the data and update the cache.  
+Note that the key _and_ parameters provided to `refreshQuery` should be exactly the same!
+The following will refetch the data and update the cache.
 
 ```ts
 import { query, refreshQuery } from "rx-query";
 
-characters$ = query("characters", 1, (id) => this.rickAndMortyService.getCharacter(id));
+character$ = query("character", 1, (id) =>
+	this.rickAndMortyService.getCharacter(id),
+);
 
 // On some event
-refreshQuery("characters", 1);
+refreshQuery("character", 1);
 ```
 
 ## Output
