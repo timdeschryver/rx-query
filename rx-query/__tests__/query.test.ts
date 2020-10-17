@@ -413,7 +413,7 @@ it('invokes query on focus', async () => {
 	const values = [];
 	let i = 20;
 
-	setInterval(() => {
+	setTimeout(() => {
 		fireEvent.focus(window);
 	}, 10);
 

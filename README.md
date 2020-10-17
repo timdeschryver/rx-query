@@ -164,6 +164,7 @@ export type QueryConfig = {
 	retryDelay?: number | ((retryAttempt: number) => number);
 	refetchInterval?: number | Observable<unknown>;
 	refetchOnWindowFocus?: boolean;
+	refetchOnReconnect?: boolean;
 	staleTime?: number;
 	cacheTime?: number;
 	mutator?: (data: QueryResult, params: QueryParam) => QueryResult;
@@ -235,13 +236,27 @@ Usage:
 Invoke the query in the background when the window is focused, and emit the new value when the query is resolved.
 [Example](https://timdeschryver.github.io/rx-query/?path=/story/rx-query--refresh-on-focus).
 
-Default: `false`
+Default: `true`
 
 Usage:
 
 ```ts
 {
 	refetchOnWindowFocus: true,
+}
+```
+
+### `refetchOnReconnect`
+
+Invoke the query when the client goes back online.
+
+Default: `true`
+
+Usage:
+
+```ts
+{
+	refetchOnReconnect: true,
 }
 ```
 

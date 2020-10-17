@@ -123,6 +123,14 @@ export const queryCache = revalidate.pipe(
 								subscriptions,
 								group,
 							),
+						reconnect: () =>
+							invokeQuery(
+								groupState,
+								revalidator,
+								queryConfig,
+								subscriptions,
+								group,
+							),
 						interval: () =>
 							invokeQuery(
 								groupState,
@@ -589,7 +597,7 @@ function holdSubscriptionsCount(
 	// reset trigger to `query-subscribe` when all subscriptions are lost
 	if (
 		subscriptions.subscriptions == 0 &&
-		['interval', 'focus'].includes(trigger)
+		['interval', 'focus', 'reconnect'].includes(trigger)
 	) {
 		trigger = 'query-subscribe';
 	}

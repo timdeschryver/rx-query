@@ -47,6 +47,12 @@ export type QueryConfig<QueryResult = unknown, QueryParam = unknown> = {
 	 */
 	refetchOnWindowFocus?: boolean;
 	/**
+	 * When `true` a fetch will be invoken when the client is online
+	 *
+	 * @default false
+	 */
+	refetchOnReconnect?: boolean;
+	/**
 	 * How long an item is "fresh" in milliseconds
 	 * When an item is fresh, it won't get refetched
 	 *
@@ -86,6 +92,7 @@ export type Revalidator<QueryResult = unknown, QueryParam = unknown> = {
 		| 'query-unsubscribe' // remove previous group
 		| 'interval' // refresh after x ms
 		| 'focus' // refresh after re-focus
+		| 'reconnect' // refresh after online
 		| 'manual' // manual refresh
 		| 'group-unsubscribe' // all subscribers are unsubscribed for a group
 		| 'group-remove' // remove the group after x ms after unsubscribe

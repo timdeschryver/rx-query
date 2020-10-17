@@ -140,6 +140,12 @@ export function query(
 	return defer(() => {
 		const params$ = paramsTrigger(queryConfig, queryParam, key, invokeQuery);
 		const focus$ = focusTrigger(queryConfig, queryParam, key, invokeQuery);
+		const reconnect$ = reconnectTrigger(
+			queryConfig,
+			queryParam,
+			key,
+			invokeQuery,
+		);
 		const interval$ = intervalTrigger(
 			queryConfig,
 			queryParam,
@@ -148,7 +154,7 @@ export function query(
 		);
 
 		const triggersSubscription = scheduled(
-			[params$, focus$, interval$],
+			[params$, focus$, reconnect$, interval$],
 			asyncScheduler,
 		)
 			.pipe(mergeAll())
@@ -277,6 +283,29 @@ function focusTrigger(
 						config: queryConfig,
 					};
 					return focused;
+				}),
+		  )
+		: NEVER;
+}
+
+function reconnectTrigger(
+	queryConfig: Required<QueryConfig>,
+	queryParam: Observable<unknown>,
+	key: string,
+	invokeQuery: QueryInvoker,
+): Observable<Revalidator> {
+	return queryConfig.refetchOnReconnect
+		? fromEvent(window, 'online').pipe(
+				withLatestFrom(queryParam),
+				map(([_, params]) => {
+					const reconnected: Revalidator = {
+						key: createQueryKey(key, params),
+						query: invokeQuery,
+						trigger: 'reconnect',
+						params,
+						config: queryConfig,
+					};
+					return reconnected;
 				}),
 		  )
 		: NEVER;
