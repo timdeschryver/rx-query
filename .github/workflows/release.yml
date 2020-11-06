@@ -24,4 +24,6 @@ jobs:
       #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       #   run: npx semantic-release
       - name: deploy storybook to GH pages
-        run: npm run deploy-storybook
+        run: npm run deploy-storybook -- --ci
+        env:
+          GH_TOKEN: ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}
