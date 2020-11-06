@@ -24,15 +24,13 @@ import { query } from '../../rx-query';
 					*ngSwitchCase="'loading'"
 					class=" items-center bg-blue-500 text-white text-sm font-bold px-4 py-3"
 				>
-					Loading ... {{ repo.retries ? '( ' + repo.retries + ' )' : '' }}
+					Loading ... ( {{ repo.retries }} )
 				</div>
 				<div
 					*ngSwitchCase="'error'"
 					class=" items-center bg-red-500 text-white text-sm font-bold px-4 py-3"
 				>
-					<p>
-						Something went wrong ...
-					</p>
+					<p>Something went wrong ...</p>
 					<p>{{ repo.error.status }} {{ repo.error.statusText }}</p>
 				</div>
 			</ng-container>

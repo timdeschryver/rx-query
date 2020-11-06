@@ -23,7 +23,7 @@ import {
 	concatAll,
 	shareReplay,
 } from 'rxjs/operators';
-import { QueryConfig, QueryOutput, Revalidator } from './types';
+import { NOOP_MUTATE, QueryConfig, QueryOutput, Revalidator } from './types';
 
 let cacheKeys: string[] = [];
 export const revalidate = new Subject<Revalidator>();
@@ -285,11 +285,12 @@ export const queryCache = revalidate.pipe(
 									subscriptions,
 								),
 							manual: () =>
-								updateSubscriptions(
+								invokeQuery(
 									groupState,
 									revalidator,
 									queryConfig,
 									subscriptions,
+									group,
 								),
 
 							// handle mutation results
@@ -449,7 +450,9 @@ function invokeQuery(
 			group.pipe(
 				filter(
 					(r) =>
-						r.trigger === 'group-unsubscribe' || r.trigger === 'group-remove',
+						r.trigger === 'group-unsubscribe' ||
+						r.trigger === 'group-remove' ||
+						r.trigger === 'mutate-optimistic',
 				),
 			),
 		),
@@ -483,6 +486,7 @@ function invokeQuery(
 			status: intialState,
 			...(hasCache ? { data: groupState.result.data } : {}),
 			mutate: groupState.result.mutate,
+			retries: 0,
 		},
 		staleAt: groupState.staleAt,
 		subscriptions,
@@ -508,11 +512,19 @@ function startMutation(
 	queryConfig: QueryConfig,
 ): Observable<Group> {
 	return guardAgainstUnknownState(groupState, () => {
+		let newData = groupState.result.data;
+		if (revalidator.data !== NOOP_MUTATE) {
+			if (typeof revalidator.data === 'function') {
+				const fnResult = revalidator.data(groupState.result.data);
+				newData = fnResult === NOOP_MUTATE ? newData : fnResult;
+			} else {
+				newData = revalidator.data as Readonly<unknown>;
+			}
+		}
+
 		const newResult: QueryOutput = {
 			...groupState.result,
-			data: (typeof revalidator.data === 'function'
-				? revalidator.data(groupState.result.data)
-				: revalidator.data) as Readonly<unknown>,
+			data: newData,
 			status: 'mutating',
 		};
 		return of({
@@ -533,14 +545,19 @@ function mutationCommit(
 	queryConfig: QueryConfig,
 ): Observable<Group> {
 	return guardAgainstUnknownState(groupState, () => {
+		let newData = groupState.result.data;
+		if (revalidator.data !== NOOP_MUTATE) {
+			if (typeof revalidator.data === 'function') {
+				const fnResult = revalidator.data(groupState.result.data);
+				newData = fnResult === NOOP_MUTATE ? newData : fnResult;
+			} else {
+				newData = revalidator.data as Readonly<unknown>;
+			}
+		}
+
 		const newResult: QueryOutput = {
 			...groupState.result,
-			data:
-				revalidator.data === undefined
-					? groupState.result.data
-					: (((typeof revalidator.data === 'function'
-							? revalidator.data(groupState.result.data)
-							: revalidator.data) as Readonly<unknown>) as Readonly<unknown>),
+			data: newData,
 			status: 'success',
 		};
 

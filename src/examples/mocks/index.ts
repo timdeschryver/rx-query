@@ -1,5 +1,6 @@
 import { setupWorker, rest } from 'msw';
 import { orderHandlers } from './orders.mocks';
+import { todosHandlers } from './todos.mocks';
 
 export const worker = setupWorker(
 	rest.get('/now', (req, res, ctx) => {
@@ -44,6 +45,7 @@ export const worker = setupWorker(
 		return res(ctx.delay(1000), result);
 	}),
 	...orderHandlers,
+	...todosHandlers,
 );
 
 const persons = [

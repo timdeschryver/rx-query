@@ -10,6 +10,7 @@ import {
 	Revalidator,
 	resetQueryCache,
 	refreshQuery,
+	NOOP_MUTATE,
 } from '..';
 
 beforeEach(() => {
@@ -28,6 +29,7 @@ it('first loads then succeeds', async () => {
 	expect(valuesWithoutMutate(values)).toEqual([
 		{
 			status: 'loading',
+			retries: 0,
 		},
 		{
 			status: 'success',
@@ -49,6 +51,7 @@ it('retries then errors', async () => {
 	expect(valuesWithoutMutate(values)).toEqual([
 		{
 			status: 'loading',
+			retries: 0,
 		},
 		...Array.from({ length: DEFAULT_QUERY_CONFIG.retries as number }).map(
 			(_, i) => ({
@@ -79,6 +82,7 @@ it('can override default error config with retries', async () => {
 	expect(valuesWithoutMutate(values)).toEqual([
 		{
 			status: 'loading',
+			retries: 0,
 		},
 		{
 			status: 'loading',
@@ -110,6 +114,7 @@ it('can override default error config with custom retry', async () => {
 	expect(valuesWithoutMutate(values)).toEqual([
 		{
 			status: 'loading',
+			retries: 0,
 		},
 		...Array.from({ length: 5 }).map((_, i) => ({
 			status: 'loading',
@@ -151,13 +156,13 @@ it('retrieves data when params change and caches previous results', async () => 
 
 	expect(valuesWithoutMutate(values)).toEqual([
 		// true is already in cache, so it refreshes
-		{ status: 'refreshing', data: true },
+		{ status: 'refreshing', data: true, retries: 0 },
 		{ status: 'success', data: true },
-		{ status: 'loading' },
+		{ status: 'loading', retries: 0 },
 		{ status: 'success', data: false },
 
 		// true again -> refresh the cache
-		{ status: 'refreshing', data: true },
+		{ status: 'refreshing', data: true, retries: 0 },
 		{ status: 'success', data: true },
 	]);
 
@@ -185,12 +190,13 @@ it('keepPreviousData uses previous data until it receives new data', async () =>
 	}
 
 	expect(valuesWithoutMutate(values)).toEqual([
-		{ status: 'loading' },
+		{ status: 'loading', retries: 0 },
 		{ status: 'success', data: 0 },
 		// while 1 is loading use previous data and set status as refreshing
 		{
 			data: 0,
 			status: 'refreshing',
+			retries: 0,
 		},
 		// 1 receievs a response
 		{
@@ -201,6 +207,7 @@ it('keepPreviousData uses previous data until it receives new data', async () =>
 		{
 			data: 1,
 			status: 'refreshing',
+			retries: 0,
 		},
 		// 2 receievs a response
 		{
@@ -211,6 +218,7 @@ it('keepPreviousData uses previous data until it receives new data', async () =>
 		{
 			data: 2,
 			status: 'refreshing',
+			retries: 0,
 		},
 		// 3 receievs a response
 		{
@@ -246,13 +254,13 @@ it('groups cache continues to live until cacheTime resolves', async () => {
 	}
 
 	expect(valuesWithoutMutate(values)).toEqual([
-		{ status: 'loading' },
+		{ status: 'loading', retries: 0 },
 		{ status: 'success', data: true },
-		{ status: 'loading' },
+		{ status: 'loading', retries: 0 },
 		{ status: 'success', data: false },
 
 		// true was already cached and while being unsubscribed to, the cache remains
-		{ status: 'refreshing', data: true },
+		{ status: 'refreshing', data: true, retries: 0 },
 		{ status: 'success', data: true },
 	]);
 });
@@ -283,13 +291,13 @@ it('groups clean up after last unsubscribe', async () => {
 	}
 
 	expect(valuesWithoutMutate(values)).toEqual([
-		{ status: 'loading' },
+		{ status: 'loading', retries: 0 },
 		{ status: 'success', data: true },
-		{ status: 'loading' },
+		{ status: 'loading', retries: 0 },
 		{ status: 'success', data: false },
 
 		// true was unsubscribed too, so it loses its cache
-		{ status: 'loading' },
+		{ status: 'loading', retries: 0 },
 		{ status: 'success', data: true },
 	]);
 });
@@ -311,9 +319,9 @@ it('ignores following params with same key', async () => {
 	}
 
 	expect(valuesWithoutMutate(values)).toEqual([
-		{ status: 'loading' },
+		{ status: 'loading', retries: 0 },
 		{ status: 'success', data: 'same' },
-		{ status: 'loading' },
+		{ status: 'loading', retries: 0 },
 		{ status: 'success', data: 'other' },
 	]);
 });
@@ -343,13 +351,13 @@ it('can disable cache', async () => {
 	}
 
 	expect(valuesWithoutMutate(values)).toEqual([
-		{ status: 'loading' },
+		{ status: 'loading', retries: 0 },
 		{ status: 'success', data: true },
-		{ status: 'loading' },
+		{ status: 'loading', retries: 0 },
 		{ status: 'success', data: false },
 
 		// no cache -> data is undefined
-		{ status: 'loading' },
+		{ status: 'loading', retries: 0 },
 		{ status: 'success', data: true },
 	]);
 });
@@ -369,6 +377,7 @@ it('invokes query on refresh', async () => {
 	expect(valuesWithoutMutate(values)).toEqual([
 		{
 			status: 'loading',
+			retries: 0,
 		},
 		{
 			status: 'success',
@@ -377,6 +386,7 @@ it('invokes query on refresh', async () => {
 		{
 			status: 'refreshing',
 			data: 20,
+			retries: 0,
 		},
 		{
 			status: 'success',
@@ -385,6 +395,7 @@ it('invokes query on refresh', async () => {
 		{
 			status: 'refreshing',
 			data: 21,
+			retries: 0,
 		},
 		{
 			status: 'success',
@@ -393,6 +404,7 @@ it('invokes query on refresh', async () => {
 		{
 			status: 'refreshing',
 			data: 22,
+			retries: 0,
 		},
 		{
 			status: 'success',
@@ -401,6 +413,7 @@ it('invokes query on refresh', async () => {
 		{
 			status: 'refreshing',
 			data: 23,
+			retries: 0,
 		},
 		{
 			status: 'success',
@@ -428,6 +441,7 @@ it('invokes query on focus', async () => {
 	expect(valuesWithoutMutate(values)).toEqual([
 		{
 			status: 'loading',
+			retries: 0,
 		},
 		{
 			status: 'success',
@@ -437,6 +451,7 @@ it('invokes query on focus', async () => {
 		{
 			status: 'refreshing',
 			data: 20,
+			retries: 0,
 		},
 		{
 			status: 'success',
@@ -475,7 +490,7 @@ it('can disable refresh on data when data is still fresh', async () => {
 	expect(valuesWithoutMutate(values)).toEqual([
 		// doesn't fire a load, nor a refresh
 		{ status: 'success', data: true },
-		{ status: 'loading' },
+		{ status: 'loading', retries: 0 },
 		{ status: 'success', data: false },
 	]);
 
@@ -496,6 +511,7 @@ it('can refresh on demand', async () => {
 	expect(valuesWithoutMutate(values)).toEqual([
 		{
 			status: 'loading',
+			retries: 0,
 		},
 		{
 			status: 'success',
@@ -504,6 +520,7 @@ it('can refresh on demand', async () => {
 		{
 			status: 'refreshing',
 			data: 20,
+			retries: 0,
 		},
 		{
 			status: 'success',
@@ -512,6 +529,7 @@ it('can refresh on demand', async () => {
 		{
 			status: 'refreshing',
 			data: 21,
+			retries: 0,
 		},
 		{
 			status: 'success',
@@ -520,6 +538,7 @@ it('can refresh on demand', async () => {
 		{
 			status: 'refreshing',
 			data: 22,
+			retries: 0,
 		},
 		{
 			status: 'success',
@@ -528,6 +547,7 @@ it('can refresh on demand', async () => {
 		{
 			status: 'refreshing',
 			data: 23,
+			retries: 0,
 		},
 		{
 			status: 'success',
@@ -559,7 +579,7 @@ it('can mutate data (data overwrite)', async () => {
 	}
 
 	expect(valuesWithoutMutate(values)).toEqual([
-		{ status: 'loading' },
+		{ status: 'loading', retries: 0 },
 		{
 			status: 'success',
 			data: { name: 'initial', description: 'just a description' },
@@ -594,7 +614,7 @@ it('can mutate data (updator fn)', async () => {
 	}
 
 	expect(valuesWithoutMutate(values)).toEqual([
-		{ status: 'loading' },
+		{ status: 'loading', retries: 0 },
 		{
 			status: 'success',
 			data: { name: 'initial', description: 'just a description' },
@@ -602,6 +622,41 @@ it('can mutate data (updator fn)', async () => {
 		{
 			status: 'success',
 			data: { name: 'updated', description: 'just a description' },
+		},
+	]);
+});
+
+it('can mutate data (NOOP_MUTATE ignores the value)', async () => {
+	const values = [];
+	setTimeout(() => {
+		revalidate.next({
+			key: 'test',
+			data: () => NOOP_MUTATE,
+			trigger: 'mutate-success',
+			config: DEFAULT_QUERY_CONFIG,
+		});
+	}, 10);
+	for await (const value of eachValueFrom(
+		query('test', () =>
+			of({ name: 'initial', description: 'just a description' }),
+		).pipe(
+			takeWhile((x, i) => {
+				return i < 2;
+			}, true),
+		),
+	)) {
+		values.push(value);
+	}
+
+	expect(valuesWithoutMutate(values)).toEqual([
+		{ status: 'loading', retries: 0 },
+		{
+			status: 'success',
+			data: { name: 'initial', description: 'just a description' },
+		},
+		{
+			status: 'success',
+			data: { name: 'initial', description: 'just a description' },
 		},
 	]);
 });
@@ -655,7 +710,7 @@ it('rollbacks when a mutation errors', async () => {
 	}
 
 	expect(valuesWithoutMutate(values)).toEqual([
-		{ status: 'loading' },
+		{ status: 'loading', retries: 0 },
 		{ status: 'success', data: 'initial' },
 		{ status: 'mutating', data: 'new value' },
 		{ status: 'mutating', data: 'new value 2' },

@@ -1,5 +1,8 @@
 import { Observable } from 'rxjs';
 
+export const NOOP_MUTATE = 'RX_QUERY_NOOP_MUTATE';
+export type NOOP_MUTATE_TYPE = typeof NOOP_MUTATE;
+
 export type QueryOutput<QueryResult = unknown> = {
 	status: Readonly<
 		| 'idle'
@@ -17,7 +20,7 @@ export type QueryOutput<QueryResult = unknown> = {
 };
 
 export type Mutator<QueryResult = unknown> = (
-	data: QueryResult,
+	data: unknown,
 	updater?: (current: QueryResult) => QueryResult,
 ) => void;
 
@@ -77,12 +80,16 @@ export type QueryConfig<QueryResult = unknown, QueryParam = unknown> = {
 	 * @default  (data) => data
 	 */
 	mutator?: (
-		data: QueryResult,
+		data: any,
 		options: {
-			params: QueryParam;
+			queryParameters: QueryParam;
 			cacheKey: string;
 		},
-	) => QueryResult | Observable<QueryResult>;
+	) =>
+		| QueryResult
+		| Observable<QueryResult>
+		| NOOP_MUTATE_TYPE
+		| Observable<NOOP_MUTATE_TYPE>;
 };
 
 export type Revalidator<QueryResult = unknown, QueryParam = unknown> = {
