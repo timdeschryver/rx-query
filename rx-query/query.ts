@@ -54,16 +54,15 @@ export function query(
 
 	const invokeQuery: QueryInvoker = (
 		loadingStatus: string,
-		params?: unknown,
+		queryParameters?: unknown,
 	): Observable<QueryOutput> => {
 		const invoke = (retries: number) => {
-			return query(params).pipe(
+			return query(queryParameters).pipe(
 				map(
 					(data): Omit<QueryOutput, 'mutate'> => {
 						return {
 							status: 'success',
 							data: data as Readonly<unknown>,
-							...(retries ? { retries } : {}),
 						};
 					},
 				),
@@ -83,8 +82,8 @@ export function query(
 			data: unknown,
 			updater?: (current: unknown) => unknown,
 		) => {
-			const cacheKey = createQueryKey(key, params);
-			const mutate$ = queryConfig.mutator(data, { params, cacheKey });
+			const cacheKey = createQueryKey(key, queryParameters);
+			const mutate$ = queryConfig.mutator(data, { queryParameters, cacheKey });
 			if (isObservable(mutate$)) {
 				mutate$
 					.pipe(

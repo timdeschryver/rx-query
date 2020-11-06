@@ -74,9 +74,7 @@ In the view layer you will often see a structure like this, with a segment to re
 ```html
 <ng-container *ngIf="characters$ | async as characters">
 	<ng-container [ngSwitch]="characters.status">
-		<div *ngSwitchCase="'loading'">
-			Loading ... ({{ characters.retries }})
-		</div>
+		<div *ngSwitchCase="'loading'">Loading ... ({{ characters.retries }})</div>
 
 		<div *ngSwitchCase="'error'">
 			Something went wrong ... ({{ characters.retries }})
@@ -301,9 +299,9 @@ Usage:
 
 ```ts
 {
-  mutator: (data, params) =>
+  mutator: (data, queryOptions) =>
     this.http
-      .post(`/persons/${params.id}`, data)
+      .post(`/persons/${queryOptions.queryParameters.id}`, data)
       // 👇 important to let the request throw in order to rollback
       .pipe(catchError((err) => throwError(err.statusText))),
 }

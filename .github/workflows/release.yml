@@ -9,16 +9,9 @@ jobs:
   release:
     if: github.repository == 'timdeschryver/rx-query'
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node: [12, 14]
-
     steps:
       - uses: actions/checkout@v1
-      - name: use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
-        with:
-          node-version: ${{ matrix.node-version }}
+      - uses: actions/setup-node@v1
       - name: install
         run: npm install
       - name: build
@@ -30,3 +23,5 @@ jobs:
       #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       #   run: npx semantic-release
+      - name: deploy storybook to GH pages
+        run: npm run deploy-storybook

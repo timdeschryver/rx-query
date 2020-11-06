@@ -12,9 +12,7 @@ import { query } from '../../rx-query';
 				<ng-container *ngSwitchDefault>
 					{{ time.data.time }}
 				</ng-container>
-				<ng-container *ngSwitchCase="'loading'">
-					Loading ...
-				</ng-container>
+				<ng-container *ngSwitchCase="'loading'"> Loading ... </ng-container>
 				<ng-container *ngSwitchCase="'error'">
 					Something went wrong ...
 				</ng-container>
@@ -25,7 +23,7 @@ import { query } from '../../rx-query';
 })
 export class RefreshOnIntervalComponent {
 	time$ = query(
-		'example-refresh-on-focus',
+		'example-refresh-on-interval',
 		() =>
 			this.http.get<{ timestamp: number }>('/now').pipe(
 				map((utc) => {

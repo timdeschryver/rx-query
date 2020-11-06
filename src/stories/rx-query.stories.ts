@@ -12,6 +12,7 @@ import { TypeAheadComponent } from '../examples/typeahead.component';
 import { PrefetchComponent } from '../examples/prefetch.component';
 import { MutateComponent } from '../examples/mutate.component';
 import { PaginationComponent } from '../examples/pagination.component';
+import { TodosComponent } from '../examples/todos.component';
 
 export default {
 	title: 'rx-query',
@@ -93,4 +94,12 @@ export const Pagination = () => ({
 
 Pagination.story = {
 	name: 'Pagination',
+};
+
+export const Todos = () => ({
+	component: TodosComponent,
+});
+
+Todos.story = {
+	name: 'Todos',
 };

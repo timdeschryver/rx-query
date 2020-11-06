@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
-import { query, QueryOutput } from '../../rx-query';
+import { query } from '../../rx-query';
 import { Subject, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { Mutator } from '../../rx-query/types';
@@ -51,9 +51,7 @@ import { Mutator } from '../../rx-query/types';
 							Loading ...
 							{{ person.retries ? '( ' + person.retries + ' )' : '' }}
 						</div>
-						<div *ngSwitchCase="'error'">
-							Something went wrong ...
-						</div>
+						<div *ngSwitchCase="'error'">Something went wrong ...</div>
 					</div>
 				</ng-container>
 			</div>
@@ -64,11 +62,14 @@ import { Mutator } from '../../rx-query/types';
 export class MutateComponent {
 	selectedPerson = new Subject<number>();
 	person$ = query('mutate-person', 1, (id) => this.http.get(`/persons/${id}`), {
-		mutator: (data, id) =>
-			this.http
-				.post(`/persons/${id}`, data)
-				//    👇 important to rethrow 👇
-				.pipe(catchError((err) => throwError(err.statusText))),
+		mutator: (data, { queryParameters }) => {
+			return (
+				this.http
+					.post(`/persons/${queryParameters}`, data)
+					//    👇 important to rethrow 👇
+					.pipe(catchError((err) => throwError(err.statusText)))
+			);
+		},
 	});
 
 	constructor(private http: HttpClient) {}
