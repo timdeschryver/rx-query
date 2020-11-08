@@ -1,11 +1,21 @@
 # rx-query
 
+> Batteries included fetching library
+> Fetch your data with ease and give your users a better experience
+
 ## Why
 
 - a better user experience
 - ease of use
 - configurable
 - promotes [Push-based Architecture](https://medium.com/@thomasburlesonIA/push-based-architectures-with-rxjs-81b327d7c32d)
+
+## Features
+
+- Retries
+- Cache
+- Refresh on interval, focus, online
+- Mutate data
 
 ## Basics
 
