@@ -10,4 +10,4 @@ module: rx-query
 function resetQueryCache(): void;
 ```
 
-[Link to repo](https://github.com/timdeschryver/rx-query/blob/master/rx-query/cache.ts#L206-L208)
+[Link to repo](https://github.com/timdeschryver/rx-query/blob/master/rx-query/cache.ts#L350-L352)

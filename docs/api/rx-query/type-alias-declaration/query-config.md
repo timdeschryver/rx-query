@@ -21,17 +21,23 @@ export type QueryConfig<QueryResult = unknown, QueryParam = unknown> = {
    */
   retryDelay?: number | ((retryAttempt: number) => number);
   /**
+   * When `true` a fetch will be invoken when the window is refocused
+   *
+   * @default true
+   */
+  refetchOnWindowFocus?: boolean;
+  /**
+   * When `true` a fetch will be invoken when the client is online
+   *
+   * @default true
+   */
+  refetchOnReconnect?: boolean;
+  /**
    * The interval in milliseconds to fetch the query
    *
    * @default Number.MAX_VALUE
    */
   refetchInterval?: number | Observable<unknown>;
-  /**
-   * When `true` a fetch will be invoken when the window is refocused
-   *
-   * @default false
-   */
-  refetchOnWindowFocus?: boolean;
   /**
    * How long an item is "fresh" in milliseconds
    * When an item is fresh, it won't get refetched
@@ -46,18 +52,28 @@ export type QueryConfig<QueryResult = unknown, QueryParam = unknown> = {
    */
   cacheTime?: number;
   /**
+   * Return the latest result
+   *
+   * @default false
+   */
+  keepPreviousData?: boolean;
+  /**
    * A mutate function to update the cache
    *
-   * @default  (data) => data
+   * @default (data) => data
    */
   mutator?: (
-    data: QueryResult,
+    data: any,
     options: {
-      params: QueryParam;
+      queryParameters: QueryParam;
       cacheKey: string;
     }
-  ) => QueryResult | Observable<QueryResult>;
+  ) =>
+    | QueryResult
+    | Observable<QueryResult>
+    | NOOP_MUTATE_TYPE
+    | Observable<NOOP_MUTATE_TYPE>;
 };
 ```
 
-[Link to repo](https://github.com/timdeschryver/rx-query/blob/master/rx-query/types.ts#L24-L74)
+[Link to repo](https://github.com/timdeschryver/rx-query/blob/master/rx-query/types.ts#L27-L93)

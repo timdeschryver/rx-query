@@ -38,23 +38,23 @@ export type QueryConfig<QueryResult = unknown, QueryParam = unknown> = {
 	 */
 	retryDelay?: number | ((retryAttempt: number) => number);
 	/**
-	 * The interval in milliseconds to fetch the query
-	 *
-	 * @default Number.MAX_VALUE
-	 */
-	refetchInterval?: number | Observable<unknown>;
-	/**
 	 * When `true` a fetch will be invoken when the window is refocused
 	 *
-	 * @default false
+	 * @default true
 	 */
 	refetchOnWindowFocus?: boolean;
 	/**
 	 * When `true` a fetch will be invoken when the client is online
 	 *
-	 * @default false
+	 * @default true
 	 */
 	refetchOnReconnect?: boolean;
+	/**
+	 * The interval in milliseconds to fetch the query
+	 *
+	 * @default Number.MAX_VALUE
+	 */
+	refetchInterval?: number | Observable<unknown>;
 	/**
 	 * How long an item is "fresh" in milliseconds
 	 * When an item is fresh, it won't get refetched
@@ -77,7 +77,7 @@ export type QueryConfig<QueryResult = unknown, QueryParam = unknown> = {
 	/**
 	 * A mutate function to update the cache
 	 *
-	 * @default  (data) => data
+	 * @default (data) => data
 	 */
 	mutator?: (
 		data: any,

@@ -28,7 +28,7 @@ import {
 	shareReplay,
 } from 'rxjs/operators';
 import { revalidate, queryCache } from './cache';
-import { DEFAULT_QUERY_CONFIG } from './config';
+import { getQueryConfig } from './config';
 import { createQueryKey } from './key';
 import { mutateSuccess, mutateError, mutateOptimistic } from './mutate';
 import { QueryOutput, QueryConfig, Revalidator, Mutator } from './types';
@@ -330,7 +330,7 @@ function parseInput(inputs: unknown[]) {
 		| undefined;
 
 	const queryConfig = {
-		...DEFAULT_QUERY_CONFIG,
+		...getQueryConfig(),
 		...inputConfig,
 	};
 

@@ -18,6 +18,6 @@ function mutateOptimistic<Result = unknown>(
 ## Parameters
 
 | Name | Type     | Description                    |
-| ---- | -------- | ------------------------------ |
+| ---- | -------- | ------------------------------ | --- |
 | key  | `string` |                                |
-| data | `Result  | ((current: Result) => Result)` |  |
+| data | `Result  | ((current: Result) => Result)` |     |

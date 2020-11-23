@@ -1,5 +1,5 @@
 import { revalidate } from './cache';
-import { DEFAULT_QUERY_CONFIG } from './config';
+import { getQueryConfig } from './config';
 
 export function mutateOptimistic<Result = unknown>(
 	key: string,
@@ -9,7 +9,7 @@ export function mutateOptimistic<Result = unknown>(
 		key,
 		data,
 		trigger: 'mutate-optimistic',
-		config: DEFAULT_QUERY_CONFIG,
+		config: getQueryConfig(),
 	});
 }
 
@@ -21,7 +21,7 @@ export function mutateSuccess<Result = unknown>(
 		key,
 		data,
 		trigger: 'mutate-success',
-		config: DEFAULT_QUERY_CONFIG,
+		config: getQueryConfig(),
 	});
 }
 
@@ -30,6 +30,6 @@ export function mutateError(key: string, error: unknown): void {
 		key,
 		data: error,
 		trigger: 'mutate-error',
-		config: DEFAULT_QUERY_CONFIG,
+		config: getQueryConfig(),
 	});
 }

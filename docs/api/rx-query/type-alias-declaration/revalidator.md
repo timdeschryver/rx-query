@@ -14,6 +14,7 @@ export type Revalidator<QueryResult = unknown, QueryParam = unknown> = {
     | "query-unsubscribe" // remove previous group
     | "interval" // refresh after x ms
     | "focus" // refresh after re-focus
+    | "reconnect" // refresh after online
     | "manual" // manual refresh
     | "group-unsubscribe" // all subscribers are unsubscribed for a group
     | "group-remove" // remove the group after x ms after unsubscribe
@@ -31,4 +32,4 @@ export type Revalidator<QueryResult = unknown, QueryParam = unknown> = {
 };
 ```
 
-[Link to repo](https://github.com/timdeschryver/rx-query/blob/master/rx-query/types.ts#L76-L97)
+[Link to repo](https://github.com/timdeschryver/rx-query/blob/master/rx-query/types.ts#L95-L117)

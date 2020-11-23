@@ -10,7 +10,7 @@ module: rx-query
 function query(key: string, ...inputs: unknown[]): Observable<QueryOutput>;
 ```
 
-[Link to repo](https://github.com/timdeschryver/rx-query/blob/master/rx-query/query.ts#L48-L184)
+[Link to repo](https://github.com/timdeschryver/rx-query/blob/master/rx-query/query.ts#L47-L191)
 
 ## Parameters
 
@@ -29,7 +29,7 @@ function query<QueryResult, QueryParam>(
 ): Observable<QueryOutput<QueryResult>>;
 ```
 
-[Link to repo](https://github.com/timdeschryver/rx-query/blob/master/rx-query/query.ts#L36-L40)
+[Link to repo](https://github.com/timdeschryver/rx-query/blob/master/rx-query/query.ts#L35-L39)
 
 ### Parameters
 
@@ -48,13 +48,13 @@ function query<QueryResult, QueryParam>(
 ): Observable<QueryOutput<QueryResult>>;
 ```
 
-[Link to repo](https://github.com/timdeschryver/rx-query/blob/master/rx-query/query.ts#L41-L46)
+[Link to repo](https://github.com/timdeschryver/rx-query/blob/master/rx-query/query.ts#L40-L45)
 
 ### Parameters
 
 | Name                    | Type                                              | Description             |
-| ----------------------- | ------------------------------------------------- | ----------------------- |
+| ----------------------- | ------------------------------------------------- | ----------------------- | --- |
 | key                     | `string`                                          |                         |
-| observableOrStaticParam | `QueryParam                                       | Observable<QueryParam>` |  |
+| observableOrStaticParam | `QueryParam                                       | Observable<QueryParam>` |     |
 | query                   | `(params: QueryParam) => Observable<QueryResult>` |                         |
 | config                  | `QueryConfig<QueryResult, QueryParam>`            |                         |

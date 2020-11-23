@@ -1,6 +1,6 @@
 import { QueryConfig } from './types';
 
-export const DEFAULT_QUERY_CONFIG: Required<QueryConfig> = {
+const DEFAULT_QUERY_CONFIG: Required<QueryConfig> = {
 	retries: 3,
 	retryDelay: (n) => (n + 1) * 1000,
 	refetchOnWindowFocus: true,
@@ -8,6 +8,19 @@ export const DEFAULT_QUERY_CONFIG: Required<QueryConfig> = {
 	refetchInterval: Number.MAX_VALUE,
 	staleTime: 0,
 	cacheTime: 30_0000, // 5 minutes
-	mutator: (data) => data,
 	keepPreviousData: false,
+	mutator: (data) => data,
 };
+
+let config = DEFAULT_QUERY_CONFIG;
+
+export function setQueryConfig(override: Partial<QueryConfig>): void {
+	config = {
+		...config,
+		...override,
+	};
+}
+
+export function getQueryConfig(): Required<QueryConfig> {
+	return config;
+}

@@ -8,9 +8,9 @@ module: rx-query
 
 ```ts
 export type Mutator<QueryResult = unknown> = (
-  data: QueryResult,
+  data: unknown,
   updater?: (current: QueryResult) => QueryResult
 ) => void;
 ```
 
-[Link to repo](https://github.com/timdeschryver/rx-query/blob/master/rx-query/types.ts#L19-L22)
+[Link to repo](https://github.com/timdeschryver/rx-query/blob/master/rx-query/types.ts#L22-L25)

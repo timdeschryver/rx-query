@@ -4,7 +4,7 @@ import { eachValueFrom } from 'rxjs-for-await';
 import { fireEvent } from '@testing-library/dom';
 import {
 	query,
-	DEFAULT_QUERY_CONFIG,
+	getQueryConfig,
 	revalidate,
 	QueryOutput,
 	Revalidator,
@@ -53,7 +53,7 @@ it('retries then errors', async () => {
 			status: 'loading',
 			retries: 0,
 		},
-		...Array.from({ length: DEFAULT_QUERY_CONFIG.retries as number }).map(
+		...Array.from({ length: getQueryConfig().retries as number }).map(
 			(_, i) => ({
 				status: 'loading',
 				retries: i,
@@ -563,7 +563,7 @@ it('can mutate data (data overwrite)', async () => {
 			key: 'test',
 			data: { name: 'updated' },
 			trigger: 'mutate-success',
-			config: DEFAULT_QUERY_CONFIG,
+			config: getQueryConfig(),
 		});
 	}, 10);
 	for await (const value of eachValueFrom(
@@ -598,7 +598,7 @@ it('can mutate data (updator fn)', async () => {
 			key: 'test',
 			data: (current: any) => ({ ...current, name: 'updated' }),
 			trigger: 'mutate-success',
-			config: DEFAULT_QUERY_CONFIG,
+			config: getQueryConfig(),
 		});
 	}, 10);
 	for await (const value of eachValueFrom(
@@ -633,7 +633,7 @@ it('can mutate data (NOOP_MUTATE ignores the value)', async () => {
 			key: 'test',
 			data: () => NOOP_MUTATE,
 			trigger: 'mutate-success',
-			config: DEFAULT_QUERY_CONFIG,
+			config: getQueryConfig(),
 		});
 	}, 10);
 	for await (const value of eachValueFrom(
@@ -668,25 +668,25 @@ it('rollbacks when a mutation errors', async () => {
 			key: 'test',
 			data: 'new value',
 			trigger: 'mutate-optimistic',
-			config: DEFAULT_QUERY_CONFIG,
+			config: getQueryConfig(),
 		},
 		// 👇 gets ignored because we're in `mutating` state
 		{
 			key: 'test',
 			trigger: 'interval',
-			config: DEFAULT_QUERY_CONFIG,
+			config: getQueryConfig(),
 		},
 		{
 			key: 'test',
 			data: 'new value 2',
 			trigger: 'mutate-optimistic',
-			config: DEFAULT_QUERY_CONFIG,
+			config: getQueryConfig(),
 		},
 		{
 			key: 'test',
 			data: 'this is the error',
 			trigger: 'mutate-error',
-			config: DEFAULT_QUERY_CONFIG,
+			config: getQueryConfig(),
 		},
 	];
 	let i = 0;

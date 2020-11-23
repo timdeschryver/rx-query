@@ -250,7 +250,7 @@ Usage:
 
 ```ts
 {
-	refetchOnWindowFocus: true,
+	refetchOnWindowFocus: false,
 }
 ```
 
@@ -264,7 +264,7 @@ Usage:
 
 ```ts
 {
-	refetchOnReconnect: true,
+	refetchOnReconnect: false,
 }
 ```
 

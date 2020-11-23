@@ -23,9 +23,9 @@ function prefetch(key: string, ...inputs: unknown[]): void;
 
 ```ts
 function prefetch<QueryParam, QueryResult>(
-	key: string,
-	query: (params: QueryParam) => Observable<QueryResult>,
-	config?: QueryConfig,
+  key: string,
+  query: (params: QueryParam) => Observable<QueryResult>,
+  config?: QueryConfig
 ): void;
 ```
 
@@ -41,10 +41,10 @@ function prefetch<QueryParam, QueryResult>(
 
 ```ts
 function prefetch<QueryParam, QueryResult>(
-	key: string,
-	observableOrStaticParam: QueryParam | Observable<QueryParam>,
-	query: (params: QueryParam) => Observable<QueryResult>,
-	config?: QueryConfig,
+  key: string,
+  observableOrStaticParam: QueryParam | Observable<QueryParam>,
+  query: (params: QueryParam) => Observable<QueryResult>,
+  config?: QueryConfig
 ): void;
 ```
 
@@ -52,9 +52,9 @@ function prefetch<QueryParam, QueryResult>(
 
 ### Parameters
 
-| Name                    | Type                                              | Description |
-| ----------------------- | ------------------------------------------------- | ----------- |
-| key                     | `string`                                          |             |
-| observableOrStaticParam | `QueryParam | Observable<QueryParam>`             |             |
-| query                   | `(params: QueryParam) => Observable<QueryResult>` |             |
-| config                  | `QueryConfig<unknown, unknown>`                   |             |
+| Name                    | Type                                              | Description             |
+| ----------------------- | ------------------------------------------------- | ----------------------- | --- |
+| key                     | `string`                                          |                         |
+| observableOrStaticParam | `QueryParam                                       | Observable<QueryParam>` |     |
+| query                   | `(params: QueryParam) => Observable<QueryResult>` |                         |
+| config                  | `QueryConfig<unknown, unknown>`                   |                         |

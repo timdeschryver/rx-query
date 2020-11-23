@@ -10,4 +10,4 @@ module: rx-query
 const queryCache: Observable<Cache>;
 ```
 
-[Link to repo](https://github.com/timdeschryver/rx-query/blob/master/rx-query/cache.ts#L30-L204)
+[Link to repo](https://github.com/timdeschryver/rx-query/blob/master/rx-query/cache.ts#L31-L348)

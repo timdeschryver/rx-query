@@ -24,4 +24,4 @@ export type QueryOutput<QueryResult = unknown> = {
 };
 ```
 
-[Link to repo](https://github.com/timdeschryver/rx-query/blob/master/rx-query/types.ts#L3-L17)
+[Link to repo](https://github.com/timdeschryver/rx-query/blob/master/rx-query/types.ts#L6-L20)
