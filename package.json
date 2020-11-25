@@ -1,6 +1,6 @@
 {
 	"name": "rx-query",
-	"version": "0.0.16",
+	"version": "0.0.0-semantically-released",
 	"description": "rx-query",
 	"author": "Tim Deschryver",
 	"repository": {
