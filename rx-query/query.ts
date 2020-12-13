@@ -244,7 +244,7 @@ function intervalTrigger(
 	key: string,
 	invokeQuery: QueryInvoker,
 ): Observable<Revalidator> {
-	return queryConfig.refetchInterval !== Number.MAX_VALUE
+	return queryConfig.refetchInterval !== Infinity
 		? (isObservable(queryConfig.refetchInterval)
 				? queryConfig.refetchInterval
 				: interval(queryConfig.refetchInterval)

@@ -228,7 +228,7 @@ Usage:
 Invoke the query in the background every x milliseconds, and emit the new value when the query is resolved.
 [Example](https://timdeschryver.github.io/rx-query/?path=/story/rx-query--refresh-on-interval).
 
-Default: `Number.MAX_VALUE`
+Default: `Infinity`
 
 Usage:
 
@@ -317,9 +317,25 @@ Usage:
 }
 ```
 
+### Config override
+
+To override the defaults for all queries, you can use the `setQueryConfig` method.
+
+```ts
+setQueryConfig({
+	refetchOnWindowFocus: false,
+	retries: 0,
+	cacheTime: 60_000,
+});
+```
+
 ## Inspiration
 
 This library is inspired by:
 
 - [react-query](https://github.com/tannerlinsley/react-query), written by [Tanner Linsley](https://twitter.com/tannerlinsley)
 - [vercel/swr](https://github.com/vercel/swr)
+
+```
+
+```

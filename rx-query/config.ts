@@ -5,7 +5,7 @@ const DEFAULT_QUERY_CONFIG: Required<QueryConfig> = {
 	retryDelay: (n) => (n + 1) * 1000,
 	refetchOnWindowFocus: true,
 	refetchOnReconnect: true,
-	refetchInterval: Number.MAX_VALUE,
+	refetchInterval: Infinity,
 	staleTime: 0,
 	cacheTime: 30_0000, // 5 minutes
 	keepPreviousData: false,
