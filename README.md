@@ -335,7 +335,3 @@ This library is inspired by:
 
 - [react-query](https://github.com/tannerlinsley/react-query), written by [Tanner Linsley](https://twitter.com/tannerlinsley)
 - [vercel/swr](https://github.com/vercel/swr)
-
-```
-
-```
