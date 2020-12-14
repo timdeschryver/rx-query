@@ -52,7 +52,7 @@ export type QueryConfig<QueryResult = unknown, QueryParam = unknown> = {
 	/**
 	 * The interval in milliseconds to fetch the query
 	 *
-	 * @default Number.MAX_VALUE
+	 * @default Infinity
 	 */
 	refetchInterval?: number | Observable<unknown>;
 	/**

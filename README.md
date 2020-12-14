@@ -228,7 +228,7 @@ Usage:
 Invoke the query in the background every x milliseconds, and emit the new value when the query is resolved.
 [Example](https://timdeschryver.github.io/rx-query/?path=/story/rx-query--refresh-on-interval).
 
-Default: `Number.MAX_VALUE`
+Default: `Infinity`
 
 Usage:
 
@@ -315,6 +315,18 @@ Usage:
       // 👇 important to let the request throw in order to rollback
       .pipe(catchError((err) => throwError(err.statusText))),
 }
+```
+
+### Config override
+
+To override the defaults for all queries, you can use the `setQueryConfig` method.
+
+```ts
+setQueryConfig({
+	refetchOnWindowFocus: false,
+	retries: 0,
+	cacheTime: 60_000,
+});
 ```
 
 ## Inspiration
