@@ -171,7 +171,10 @@ export function query(
 					// exclude state changes that are unimportant to the consumer
 					!['query-unsubscribe', 'group-unsubscribe'].includes(v.trigger),
 			),
-			map((v) => v.groupState.result as QueryOutput),
+			map((v) => {
+			  console.count('result')
+			  return v.groupState.result as QueryOutput
+      }),
 			distinctUntilChanged(),
 			patchDataWithPreviousData(queryConfig.keepPreviousData),
 			finalize(() => {

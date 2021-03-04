@@ -100,6 +100,7 @@ export class RxQueryDevToolComponent {
 	cache$ = queryCache.pipe(
 		map((c) => {
 			return Object.entries(c).map(([key, value]) => {
+			  console.log('devtool', value.groupState.result.status, value.groupState.key, value.trigger)
 				return {
 					key,
 					data: value.groupState.result.data,

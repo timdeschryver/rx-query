@@ -49,7 +49,7 @@ export class AppComponent implements OnInit, OnDestroy {
 		() => this.rickAndMortyService.getCharacters().pipe(pluck('results')),
 		{
 			refetchOnWindowFocus: true,
-			staleTime: 10_000,
+			// staleTime: 10_000,
 		},
 	);
 
@@ -62,7 +62,7 @@ export class AppComponent implements OnInit, OnDestroy {
 			(characterId: number) =>
 				this.rickAndMortyService.getCharacter(characterId),
 			{
-				staleTime: 50000,
+				// staleTime: 50000,
 			},
 		);
 
@@ -72,7 +72,7 @@ export class AppComponent implements OnInit, OnDestroy {
 			(characterId: number) =>
 				this.rickAndMortyService.getCharacter(characterId),
 			{
-				staleTime: 50000,
+				// staleTime: 50000,
 			},
 		);
 	}
