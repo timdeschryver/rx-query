@@ -12,7 +12,7 @@ if (typeof global.process === "undefined") {
 	} else {
 		worker.start({
 			serviceWorker: {
-				url: "/rx-query/mockServiceWorker.js",
+				url: "/rx-query/assets/mockServiceWorker.js",
 			},
 		});
 	}

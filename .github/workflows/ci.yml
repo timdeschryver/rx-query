@@ -1,14 +1,21 @@
 name: ci
 
-on: pull_request
-
+on:
+  pull_request:
+    paths-ignore:
+      - "*.md"
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - "*.md"
 jobs:
   build_and_test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-        node: [12, 14]
+        node: [12, 14, 15]
 
     steps:
       - uses: actions/checkout@v1
@@ -22,3 +29,14 @@ jobs:
         run: npm run dist:build
       - name: test
         run: npm run test
+      - name: Release
+        if: github.repository == 'timdeschryver/rx-query' && github.ref == 'refs/heads/master' && matrix.node-version == 15 && matrix.os == 'ubuntu-latest'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npx semantic-release
+      - name: deploy storybook to GH pages
+        if: github.repository == 'timdeschryver/rx-query' && github.ref == 'refs/heads/master' && matrix.node-version == 15 && matrix.os == 'ubuntu-latest'
+        run: npm run deploy-storybook -- --ci
+        env:
+          GH_TOKEN: ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}
