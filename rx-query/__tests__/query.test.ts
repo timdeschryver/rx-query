@@ -428,7 +428,7 @@ it('invokes query on focus', async () => {
 
 	setTimeout(() => {
 		fireEvent.focus(window);
-	}, 10);
+	}, 100);
 
 	for await (const value of eachValueFrom(
 		query('test', () => of(i++), {
