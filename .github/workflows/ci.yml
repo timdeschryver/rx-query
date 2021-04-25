@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [12, 14, 15]
+        node-version: [12, 14, 16]
 
     steps:
       - uses: actions/checkout@v1
@@ -29,13 +29,13 @@ jobs:
       - name: test
         run: npm run test
       - name: Release
-        if: github.repository == 'timdeschryver/rx-query' && github.ref == 'refs/heads/master' && matrix.node-version == 15
+        if: github.repository == 'timdeschryver/rx-query' && github.ref == 'refs/heads/master' && matrix.node-version == 16
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
       - name: deploy storybook to GH pages
-        if: github.repository == 'timdeschryver/rx-query' && github.ref == 'refs/heads/master' && matrix.node-version == 15
+        if: github.repository == 'timdeschryver/rx-query' && github.ref == 'refs/heads/master' && matrix.node-version == 16
         run: npm run deploy-storybook -- --ci
         env:
           GH_TOKEN: ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}
