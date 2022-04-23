@@ -1,3 +1,5 @@
+❗ This package is no longer being actively maintained. ❗
+
 # rx-query
 
 > Batteries included fetching library
