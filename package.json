@@ -50,7 +50,7 @@
     "directory": "rx-query",
     "compilerOptions": {
       "lib": [
-        "es2018",
+        "ES2019",
         "dom"
       ]
     }
@@ -79,7 +79,7 @@
     "@testing-library/angular": "12.1.2",
     "@testing-library/dom": "7.20.0",
     "@testing-library/jest-dom": "5.11.0",
-    "@types/jest": "^26.0.3",
+    "@types/jest": "^28.1.3",
     "@types/node": "^12.11.1",
     "@typescript-eslint/eslint-plugin": "^3.6.0",
     "@typescript-eslint/parser": "^3.6.0",
@@ -89,20 +89,20 @@
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-jest": "^23.18.0",
     "husky": "^4.2.5",
-    "jest": "^26.1.0",
-    "jest-preset-angular": "^8.2.1",
+    "jest": "^28.1.3",
+    "jest-preset-angular": "^12.2.2",
     "lint-staged": "^10.2.11",
     "msw": "^0.21.2",
     "node-request-interceptor": "0.3.1",
     "prettier": "^2.0.5",
     "rimraf": "^3.0.2",
     "rxjs": "~7.5.6",
-    "rxjs-for-await": "^0.0.2",
-    "ts-jest": "^26.1.1",
+    "rxjs-for-await": "^1.0.0",
+    "ts-jest": "^28.0.8",
     "ts-node": "~8.3.0",
-    "tsd": "^0.13.1",
-    "tslib": "^2.0.0",
-    "typescript": "^4.6.4",
+    "tsd": "^0.23.0",
+    "tslib": "^2.3.1",
+    "typescript": "4.7.4",
     "zone.js": "~0.11.4"
   }
 }
