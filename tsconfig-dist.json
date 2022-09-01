@@ -5,5 +5,5 @@
 	},
 	"include": ["rx-query/**/*.ts"],
 	"exclude": ["rx-query/**/*.test.ts", "rx-query/**/*.test-d.ts"],
-	"extends": "./tsconfig.base.json"
+	"extends": "./tsconfig.json"
 }

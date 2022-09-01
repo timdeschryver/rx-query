@@ -1,110 +1,108 @@
 {
-	"name": "rx-query",
-	"version": "0.0.0-semantically-released",
-	"description": "rx-query",
-	"author": "Tim Deschryver",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/timdeschryver/rx-query.git"
-	},
-	"bugs": {
-		"url": "https://github.com/timdeschryver/rx-query/issues"
-	},
-	"homepage": "https://github.com/timdeschryver/rx-query#readme",
-	"license": "MIT",
-	"keywords": [
-		"RxJS",
-		"Reactive",
-		"State"
-	],
-	"main": "./dist/cjs/index.js",
-	"module": "./dist/esm/index.js",
-	"types": "./dist/esm/index.d.ts",
-	"files": [
-		"package.json",
-		"README.md",
-		"dist"
-	],
-	"private": false,
-	"scripts": {
-		"ng": "ng",
-		"start": "ng serve",
-		"build:angular": "ng build",
-		"test": "jest",
-		"test:types": "tsd",
-		"lint": "eslint \"./**/*.{js,ts}\"",
-		"predist": "npm run test",
-		"dist": "npm run dist:clean && npm run dist:build",
-		"dist:build": "npm run dist:build:cjs && npm run dist:build:esm",
-		"dist:build:bundle": "webpack --config webpack.config.js && webpack --config webpack.config.js --env.production",
-		"dist:build:cjs": "tsc -p tsconfig-dist-cjs.json",
-		"dist:build:esm": "tsc -p tsconfig-dist-esm.json",
-		"dist:clean": "rimraf dist && rimraf *.tgz",
-		"postdist": "npm run test:types",
-		"storybook": "start-storybook -p 6006",
-		"build-storybook": "build-storybook",
-		"deploy-storybook": "storybook-to-ghpages",
-		"docs": "npx docs-md ./rx-query/index.ts"
-	},
-	"tsd": {
-		"directory": "rx-query",
-		"compilerOptions": {
-			"lib": [
-				"es2018",
-				"dom"
-			]
-		}
-	},
-	"peerDependencies": {
-		"rxjs": "^6.0.0"
-	},
-	"dependencies": {},
-	"devDependencies": {
-		"@angular-devkit/build-angular": "~0.1000.0",
-		"@angular/animations": "~10.0.0",
-		"@angular/cli": "~10.0.0",
-		"@angular/common": "~10.0.0",
-		"@angular/compiler": "~10.0.0",
-		"@angular/compiler-cli": "~10.0.0",
-		"@angular/core": "~10.0.0",
-		"@angular/forms": "~10.0.0",
-		"@angular/platform-browser": "~10.0.0",
-		"@angular/platform-browser-dynamic": "~10.0.0",
-		"@angular/router": "~10.0.0",
-		"@babel/core": "^7.11.1",
-		"@storybook/addon-actions": "^5.3.19",
-		"@storybook/addon-links": "^5.3.19",
-		"@storybook/addon-notes": "^5.3.19",
-		"@storybook/addons": "^5.3.19",
-		"@storybook/angular": "^5.3.19",
-		"@storybook/storybook-deployer": "^2.8.6",
-		"@testing-library/angular": "10.0.0",
-		"@testing-library/dom": "7.20.0",
-		"@testing-library/jest-dom": "5.11.0",
-		"@types/jest": "^26.0.3",
-		"@types/node": "^12.11.1",
-		"@typescript-eslint/eslint-plugin": "^3.6.0",
-		"@typescript-eslint/parser": "^3.6.0",
-		"babel-loader": "^8.1.0",
-		"cpy-cli": "^3.1.1",
-		"eslint": "^7.4.0",
-		"eslint-config-prettier": "^6.11.0",
-		"eslint-plugin-jest": "^23.18.0",
-		"husky": "^4.2.5",
-		"jest": "^26.1.0",
-		"jest-preset-angular": "^8.2.1",
-		"lint-staged": "^10.2.11",
-		"msw": "^0.21.2",
-		"node-request-interceptor": "0.3.1",
-		"prettier": "^2.0.5",
-		"rimraf": "^3.0.2",
-		"rxjs": "~6.5.5",
-		"rxjs-for-await": "^0.0.2",
-		"ts-jest": "^26.1.1",
-		"ts-node": "~8.3.0",
-		"tsd": "^0.13.1",
-		"tslib": "^2.0.0",
-		"typescript": "^3.9.6",
-		"zone.js": "~0.10.3"
-	}
+  "name": "rx-query",
+  "version": "0.0.0-semantically-released",
+  "description": "rx-query",
+  "author": "Tim Deschryver",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/timdeschryver/rx-query.git"
+  },
+  "bugs": {
+    "url": "https://github.com/timdeschryver/rx-query/issues"
+  },
+  "homepage": "https://github.com/timdeschryver/rx-query#readme",
+  "license": "MIT",
+  "keywords": [
+    "RxJS",
+    "Reactive",
+    "State"
+  ],
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "files": [
+    "package.json",
+    "README.md",
+    "dist"
+  ],
+  "private": false,
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build:angular": "ng build",
+    "test": "jest",
+    "test:types": "tsd",
+    "lint": "eslint \"./**/*.{js,ts}\"",
+    "predist": "npm run test",
+    "dist": "npm run dist:clean && npm run dist:build",
+    "dist:build": "npm run dist:build:cjs && npm run dist:build:esm",
+    "dist:build:bundle": "webpack --config webpack.config.js && webpack --config webpack.config.js --env.production",
+    "dist:build:cjs": "tsc -p tsconfig-dist-cjs.json",
+    "dist:build:esm": "tsc -p tsconfig-dist-esm.json",
+    "dist:clean": "rimraf dist && rimraf *.tgz",
+    "postdist": "npm run test:types",
+    "storybook": "start-storybook -p 6006",
+    "build-storybook": "build-storybook",
+    "deploy-storybook": "storybook-to-ghpages",
+    "docs": "npx docs-md ./rx-query/index.ts"
+  },
+  "tsd": {
+    "directory": "rx-query",
+    "compilerOptions": {
+      "lib": [
+        "es2018",
+        "dom"
+      ]
+    }
+  },
+  "peerDependencies": {},
+  "dependencies": {},
+  "devDependencies": {
+    "@angular-devkit/build-angular": "~0.1102.19",
+    "@angular/animations": "~11.2.14",
+    "@angular/cli": "~11.2.19",
+    "@angular/common": "~11.2.14",
+    "@angular/compiler": "~11.2.14",
+    "@angular/compiler-cli": "~11.2.14",
+    "@angular/core": "~11.2.14",
+    "@angular/forms": "~11.2.14",
+    "@angular/platform-browser": "~11.2.14",
+    "@angular/platform-browser-dynamic": "~11.2.14",
+    "@angular/router": "~11.2.14",
+    "@babel/core": "^7.11.1",
+    "@storybook/addon-actions": "^5.3.19",
+    "@storybook/addon-links": "^5.3.19",
+    "@storybook/addon-notes": "^5.3.19",
+    "@storybook/addons": "^5.3.19",
+    "@storybook/angular": "^5.3.19",
+    "@storybook/storybook-deployer": "^2.8.6",
+    "@testing-library/angular": "12.1.2",
+    "@testing-library/dom": "7.20.0",
+    "@testing-library/jest-dom": "5.11.0",
+    "@types/jest": "^26.0.3",
+    "@types/node": "^12.11.1",
+    "@typescript-eslint/eslint-plugin": "^3.6.0",
+    "@typescript-eslint/parser": "^3.6.0",
+    "babel-loader": "^8.1.0",
+    "cpy-cli": "^3.1.1",
+    "eslint": "^7.4.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-jest": "^23.18.0",
+    "husky": "^4.2.5",
+    "jest": "^26.1.0",
+    "jest-preset-angular": "^8.2.1",
+    "lint-staged": "^10.2.11",
+    "msw": "^0.21.2",
+    "node-request-interceptor": "0.3.1",
+    "prettier": "^2.0.5",
+    "rimraf": "^3.0.2",
+    "rxjs": "~7.5.6",
+    "rxjs-for-await": "^0.0.2",
+    "ts-jest": "^26.1.1",
+    "ts-node": "~8.3.0",
+    "tsd": "^0.13.1",
+    "tslib": "^2.0.0",
+    "typescript": "^4.1.6",
+    "zone.js": "~0.10.3"
+  }
 }
