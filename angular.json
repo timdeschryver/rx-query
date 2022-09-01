@@ -102,8 +102,7 @@
 				}
 			}
 		}
-	},
-	"defaultProject": "rx-query",
+  },
 	"cli": {
 		"analytics": false
 	}
