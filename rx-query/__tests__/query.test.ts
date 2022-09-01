@@ -41,7 +41,7 @@ it('first loads then succeeds', async () => {
 it('retries then errors', async () => {
 	const values: any[] = [];
 	for await (const value of eachValueFrom(
-		query('test', () => throwError('Error')).pipe(
+		query('test', () => throwError(() => 'Error')).pipe(
 			takeWhile((x) => x.status !== 'error', true),
 		),
 	)) {
@@ -71,7 +71,7 @@ it('retries then errors', async () => {
 it('can override default error config with retries', async () => {
 	const values: any[] = [];
 	for await (const value of eachValueFrom(
-		query('test', () => throwError('Error'), {
+		query('test', () => throwError(() => 'Error'), {
 			retries: 1,
 			retryDelay: 1,
 		}).pipe(takeWhile((x) => x.status !== 'error', true)),
@@ -100,7 +100,7 @@ it('can override default error config with retries', async () => {
 it('can override default error config with custom retry', async () => {
 	const values: any[] = [];
 	for await (const value of eachValueFrom(
-		query('test', () => throwError('Error'), {
+		query('test', () => throwError(() => 'Error'), {
 			retries: (n, error) => {
 				expect(error).toBe('Error');
 				return n < 5;

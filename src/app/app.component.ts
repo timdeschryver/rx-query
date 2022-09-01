@@ -41,7 +41,7 @@ import { RickAndMortyService } from './rickandmorty.service';
 	`,
 })
 export class AppComponent implements OnInit, OnDestroy {
-	destroyer = new Subject();
+	destroyer = new Subject<void>();
 	characterPrefetcher = new Subject<number>();
 
 	characters$ = query(
@@ -53,7 +53,7 @@ export class AppComponent implements OnInit, OnDestroy {
 		},
 	);
 
-	constructor(private rickAndMortyService: RickAndMortyService) {}
+	constructor(private rickAndMortyService: RickAndMortyService) { }
 
 	ngOnInit(): void {
 		prefetch(

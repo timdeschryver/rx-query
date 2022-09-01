@@ -9,7 +9,7 @@ import {
 	interval,
 	NEVER,
 	asyncScheduler,
-	scheduled,
+	merge,
 } from 'rxjs';
 import {
 	map,
@@ -26,6 +26,8 @@ import {
 	pairwise,
 	concatMap,
 	shareReplay,
+	observeOn,
+	debounceTime,
 } from 'rxjs/operators';
 import { revalidate, queryCache } from './cache';
 import { getQueryConfig } from './config';
@@ -100,6 +102,7 @@ export function query(
 
 			mutateSuccess(cacheKey, mutate$);
 		};
+
 		const callResult$: Observable<QueryOutput> = defer(() =>
 			invoke(0).pipe(
 				expand((result) => {
@@ -123,7 +126,7 @@ export function query(
 				}),
 				// prevents that there's multiple emits in the same tick
 				// for when the status is swapped from error to loading (to retry)
-				debounce((result) => (result.status === 'error' ? timer(0) : EMPTY)),
+				debounceTime(0),
 				map((r) => {
 					return {
 						...r,
@@ -152,11 +155,12 @@ export function query(
 			invokeQuery,
 		);
 
-		const triggersSubscription = scheduled(
-			[params$, focus$, reconnect$, interval$],
-			asyncScheduler,
+		const triggersSubscription = merge(
+			params$, focus$, reconnect$, interval$,
 		)
-			.pipe(mergeAll())
+			.pipe(
+				observeOn(asyncScheduler),
+			)
 			.subscribe({
 				next: (c) => revalidate.next(c),
 				complete: () => console.warn('complete'),
@@ -246,21 +250,21 @@ function intervalTrigger(
 ): Observable<Revalidator> {
 	return queryConfig.refetchInterval !== Infinity
 		? (isObservable(queryConfig.refetchInterval)
-				? queryConfig.refetchInterval
-				: interval(queryConfig.refetchInterval)
-		  ).pipe(
-				withLatestFrom(queryParam),
-				map(([_, params]) => {
-					const interval: Revalidator = {
-						key: createQueryKey(key, params),
-						query: invokeQuery,
-						trigger: 'interval',
-						params,
-						config: queryConfig,
-					};
-					return interval;
-				}),
-		  )
+			? queryConfig.refetchInterval
+			: interval(queryConfig.refetchInterval)
+		).pipe(
+			withLatestFrom(queryParam),
+			map(([_, params]) => {
+				const interval: Revalidator = {
+					key: createQueryKey(key, params),
+					query: invokeQuery,
+					trigger: 'interval',
+					params,
+					config: queryConfig,
+				};
+				return interval;
+			}),
+		)
 		: NEVER;
 }
 
@@ -272,18 +276,18 @@ function focusTrigger(
 ): Observable<Revalidator> {
 	return queryConfig.refetchOnWindowFocus
 		? fromEvent(window, 'focus').pipe(
-				withLatestFrom(queryParam),
-				map(([_, params]) => {
-					const focused: Revalidator = {
-						key: createQueryKey(key, params),
-						query: invokeQuery,
-						trigger: 'focus',
-						params,
-						config: queryConfig,
-					};
-					return focused;
-				}),
-		  )
+			withLatestFrom(queryParam),
+			map(([_, params]) => {
+				const focused: Revalidator = {
+					key: createQueryKey(key, params),
+					query: invokeQuery,
+					trigger: 'focus',
+					params,
+					config: queryConfig,
+				};
+				return focused;
+			}),
+		)
 		: NEVER;
 }
 
@@ -295,18 +299,18 @@ function reconnectTrigger(
 ): Observable<Revalidator> {
 	return queryConfig.refetchOnReconnect
 		? fromEvent(window, 'online').pipe(
-				withLatestFrom(queryParam),
-				map(([_, params]) => {
-					const reconnected: Revalidator = {
-						key: createQueryKey(key, params),
-						query: invokeQuery,
-						trigger: 'reconnect',
-						params,
-						config: queryConfig,
-					};
-					return reconnected;
-				}),
-		  )
+			withLatestFrom(queryParam),
+			map(([_, params]) => {
+				const reconnected: Revalidator = {
+					key: createQueryKey(key, params),
+					query: invokeQuery,
+					trigger: 'reconnect',
+					params,
+					config: queryConfig,
+				};
+				return reconnected;
+			}),
+		)
 		: NEVER;
 }
 
