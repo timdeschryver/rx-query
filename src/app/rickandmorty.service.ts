@@ -5,14 +5,14 @@ import { HttpClient } from '@angular/common/http';
 	providedIn: 'root',
 })
 export class RickAndMortyService {
-	constructor(private http: HttpClient) {}
+	constructor(private http: HttpClient) { }
 
 	getCharacters() {
-		return this.http.get('https://rickandmortyapi.com/api/character/');
+		return this.http.get<{ results: any[] }>('https://rickandmortyapi.com/api/character/');
 	}
 
 	getCharacter(characterId: number) {
-		return this.http.get(
+		return this.http.get<any>(
 			'https://rickandmortyapi.com/api/character/' + characterId,
 		);
 	}

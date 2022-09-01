@@ -1,6 +1,6 @@
 import { ChangeDetectorRef, Component } from '@angular/core';
 import { timer } from 'rxjs';
-import { map, mapTo, tap } from 'rxjs/operators';
+import { map, tap } from 'rxjs/operators';
 
 import { queryCache, revalidate } from '../../rx-query';
 
@@ -10,7 +10,7 @@ import { queryCache, revalidate } from '../../rx-query';
 		<h3 *ngIf="refresher$ | async">Rx Queries</h3>
 		<div id="rx-query-devtool">
 			<div *ngFor="let entry of cache$ | async" (click)="logClicked(entry)">
-				<div [attr.data-state]="getState(entry)" class="subscriptions">
+				<div [attr.data-state]="getState($any(entry))" class="subscriptions">
 					{{ entry.subscriptions }}
 				</div>
 				<div class="key">{{ entry.key }}</div>
@@ -115,11 +115,11 @@ export class RxQueryDevToolComponent {
 	);
 
 	refresher$ = timer(0, 1000).pipe(
-		mapTo(true),
+		map(() => true),
 		tap(() => this.cdr.markForCheck()),
 	);
 
-	constructor(private cdr: ChangeDetectorRef) {}
+	constructor(private cdr: ChangeDetectorRef) { }
 
 	removeClicked(key: string): void {
 		revalidate.next({ key, trigger: 'group-remove' } as any);

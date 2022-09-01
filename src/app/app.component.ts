@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subject } from 'rxjs';
-import { pluck, takeUntil } from 'rxjs/operators';
+import { map, takeUntil } from 'rxjs/operators';
 
 import { query, prefetch } from '../../rx-query';
 
@@ -46,7 +46,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
 	characters$ = query(
 		'characters',
-		() => this.rickAndMortyService.getCharacters().pipe(pluck('results')),
+		() => this.rickAndMortyService.getCharacters().pipe(map(c => c.results)),
 		{
 			refetchOnWindowFocus: true,
 			staleTime: 10_000,
