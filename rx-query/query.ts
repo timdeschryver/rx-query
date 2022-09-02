@@ -16,12 +16,10 @@ import {
 	startWith,
 	catchError,
 	expand,
-	debounce,
 	withLatestFrom,
 	distinctUntilChanged,
 	finalize,
 	filter,
-	mergeAll,
 	take,
 	pairwise,
 	concatMap,
@@ -163,7 +161,6 @@ export function query(
 			)
 			.subscribe({
 				next: (c) => revalidate.next(c),
-				complete: () => console.warn('complete'),
 			});
 
 		return queryCache.pipe(
