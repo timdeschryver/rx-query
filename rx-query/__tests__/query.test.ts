@@ -8,14 +8,10 @@ import {
 	revalidate,
 	QueryOutput,
 	Revalidator,
-	resetQueryCache,
 	refreshQuery,
 	NOOP_MUTATE,
 } from '..';
 
-beforeEach(() => {
-	resetQueryCache();
-});
 
 it('first loads then succeeds', async () => {
 	const values = [];

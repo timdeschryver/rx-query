@@ -1,12 +1,11 @@
 import {
 	Subject,
 	of,
-	scheduled,
-	asapScheduler,
 	EMPTY,
 	timer,
 	Observable,
 	GroupedObservable,
+	queueScheduler,
 } from 'rxjs';
 import {
 	scan,
@@ -20,8 +19,8 @@ import {
 	filter,
 	switchMap,
 	takeUntil,
-	concatAll,
 	shareReplay,
+	startWith,
 } from 'rxjs/operators';
 import { NOOP_MUTATE, QueryConfig, QueryOutput, Revalidator } from './types';
 
@@ -29,6 +28,7 @@ let cacheKeys: string[] = [];
 export const revalidate = new Subject<Revalidator>();
 
 export const queryCache = revalidate.pipe(
+	observeOn(queueScheduler),
 	tap((r) => {
 		if (r.key && r.trigger === 'group-remove') {
 			cacheKeys = cacheKeys.filter((key) => key !== r.key);
@@ -90,7 +90,6 @@ export const queryCache = revalidate.pipe(
 	),
 	map((group) =>
 		group.pipe(
-			observeOn(asapScheduler),
 			scan(
 				(subscriptions, revalidator) =>
 					holdSubscriptionsCount(subscriptions, revalidator),
@@ -172,8 +171,8 @@ export const queryCache = revalidate.pipe(
 						'mutate-error': () =>
 							updateTrigger(groupState, revalidator, queryConfig),
 					} as {
-						[handler in Revalidator['trigger']]: () => Observable<Group>;
-					};
+							[handler in Revalidator['trigger']]: () => Observable<Group>;
+						};
 
 					const handlers = {
 						idle: {
@@ -303,10 +302,10 @@ export const queryCache = revalidate.pipe(
 							...defaultHandlers,
 						},
 					} as {
-						[status in QueryOutput['status']]: {
-							[handler in Revalidator['trigger']]: () => Observable<Group>;
+							[status in QueryOutput['status']]: {
+								[handler in Revalidator['trigger']]: () => Observable<Group>;
+							};
 						};
-					};
 
 					const handler =
 						handlers[groupState.result.status][revalidator.trigger];
@@ -450,7 +449,6 @@ function invokeQuery(
 			group.pipe(
 				filter(
 					(r) =>
-						r.trigger === 'group-unsubscribe' ||
 						r.trigger === 'group-remove' ||
 						r.trigger === 'mutate-optimistic',
 				),
@@ -492,8 +490,8 @@ function invokeQuery(
 		subscriptions,
 	};
 
-	return scheduled([of(initial), invoker], asapScheduler).pipe(
-		concatAll(),
+	return invoker.pipe(
+		startWith(initial),
 		map((r) => {
 			return {
 				groupState: r,

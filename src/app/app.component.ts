@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subject } from 'rxjs';
 import { map, takeUntil } from 'rxjs/operators';
 
-import { query, prefetch } from '../../rx-query';
+import { query, prefetch, refreshQuery } from '../../rx-query';
 
 import { RickAndMortyService } from './rickandmorty.service';
 
@@ -66,15 +66,26 @@ export class AppComponent implements OnInit, OnDestroy {
 			},
 		);
 
-		prefetch(
-			'character',
-			5,
-			(characterId: number) =>
-				this.rickAndMortyService.getCharacter(characterId),
-			{
-				staleTime: 50000,
-			},
-		);
+		Array.from({ length: 3 }).forEach((_, i) => {
+			prefetch(
+				'character',
+				i + 1,
+				(characterId: number) =>
+					this.rickAndMortyService.getCharacter(characterId),
+				{
+					staleTime: 50000,
+				},
+			);
+		})
+
+
+		setTimeout(() => {
+			Array.from({ length: 3 }).forEach((_, i) => {
+				refreshQuery(
+					'character-' + (i + 1),
+				);
+			})
+		}, 1_000);
 	}
 
 	ngOnDestroy(): void {

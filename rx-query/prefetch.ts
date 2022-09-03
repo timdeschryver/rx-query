@@ -1,5 +1,5 @@
-import { Observable, of, isObservable } from 'rxjs';
-import { take, mergeMap, shareReplay } from 'rxjs/operators';
+import { Observable, of, isObservable, asapScheduler } from 'rxjs';
+import { take, mergeMap, shareReplay, observeOn } from 'rxjs/operators';
 import { query } from './query';
 import { QueryConfig } from './types';
 
@@ -20,7 +20,7 @@ export function prefetch(key: string, ...inputs: unknown[]): void {
 	queryParam
 		.pipe(
 			mergeMap((parameter) =>
-				query(key, parameter, inputQuery, queryConfig).pipe(take(1)),
+				query(key, parameter, inputQuery, queryConfig).pipe(observeOn(asapScheduler), take(1)),
 			),
 		)
 		.subscribe();
