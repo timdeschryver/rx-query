@@ -1,11 +1,11 @@
 import {
 	Subject,
 	of,
-	asapScheduler,
 	EMPTY,
 	timer,
 	Observable,
 	GroupedObservable,
+	queueScheduler,
 } from 'rxjs';
 import {
 	scan,
@@ -28,7 +28,7 @@ let cacheKeys: string[] = [];
 export const revalidate = new Subject<Revalidator>();
 
 export const queryCache = revalidate.pipe(
-
+	observeOn(queueScheduler),
 	tap((r) => {
 		if (r.key && r.trigger === 'group-remove') {
 			cacheKeys = cacheKeys.filter((key) => key !== r.key);
@@ -90,7 +90,6 @@ export const queryCache = revalidate.pipe(
 	),
 	map((group) =>
 		group.pipe(
-			observeOn(asapScheduler),
 			scan(
 				(subscriptions, revalidator) =>
 					holdSubscriptionsCount(subscriptions, revalidator),
@@ -492,7 +491,6 @@ function invokeQuery(
 	};
 
 	return invoker.pipe(
-		observeOn(asapScheduler),
 		startWith(initial),
 		map((r) => {
 			return {

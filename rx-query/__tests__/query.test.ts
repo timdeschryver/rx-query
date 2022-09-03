@@ -493,7 +493,7 @@ it('can disable refresh on data when data is still fresh', async () => {
 	sub.unsubscribe();
 });
 
-xit('can refresh on demand', async () => {
+it('can refresh on demand', async () => {
 	const values = [];
 	let i = 20;
 
