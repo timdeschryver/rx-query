@@ -7,5 +7,6 @@ beforeAll(() => server.listen());
 beforeEach(() => {
     resetQueryCache();
 });
+
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
