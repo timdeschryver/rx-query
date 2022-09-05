@@ -9,6 +9,7 @@ on:
       - master
     paths-ignore:
       - "*.md"
+
 jobs:
   build_and_test:
     runs-on: ubuntu-latest
@@ -36,12 +37,12 @@ jobs:
             package.json
             README.md
             dist
-      # - name: Release
-      #   if: github.repository == 'timdeschryver/rx-query' && github.ref == 'refs/heads/master' && matrix.node-version == 16
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      #   run: npx semantic-release
+      - name: Release
+        if: github.repository == 'timdeschryver/rx-query' && github.ref == 'refs/heads/master' && matrix.node-version == 16
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npx semantic-release
       # - name: deploy storybook to GH pages
       #   if: github.repository == 'timdeschryver/rx-query' && github.ref == 'refs/heads/master' && matrix.node-version == 16
       #   run: npm run deploy-storybook -- --ci
